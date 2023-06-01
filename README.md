@@ -1,12 +1,12 @@
 ## ANI-me-downloader
 
-# 👋 SOME description
+# 👋 Hi, this is a cli/gui interface with which u can use as a broswer(in regards to anime) and get freely available files and links. plese check [`disclaimer`](disclaimer.md).
 
 ### 📝Requirements
 
 #### Python Version
 
-You will need to install Python 3.8 or newer with pip to run VoiceAssistant. Download and install the correct
+You will need to install Python 3.10 or newer with pip to run ANI-me-downloader. Download and install the correct
 build and version of Python for your operating system [here](https://python.org/downloads).
 
 
