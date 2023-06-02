@@ -77,4 +77,4 @@ To report any bugs, raise an [issue on Github](https://github.com/anirbanmajumde
 
 ### Feature Requests
 
-To request Features for VoiceAssistant are welcome! raise an feature request [issue on Github](https://github.com/anirbanmajumder0/ANI-me-downloader/issues/new?assignees=anirbanmajumder0&labels=&template=feature_request.md)
+To request Features for ANI-me-downloader are welcome! raise an feature request [issue on Github](https://github.com/anirbanmajumder0/ANI-me-downloader/issues/new?assignees=anirbanmajumder0&labels=&template=feature_request.md)
