@@ -8,7 +8,7 @@ from queue import Queue
 import configparser
 
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read('data/config.ini')
 proxy_path = config['DEFAULT']['proxy_path']
 test_proxy = config['DEFAULT']['test_proxy_path']
 max_threads = int(config['DEFAULT']['max_threads'])
@@ -46,7 +46,7 @@ def check_proxies():
             queue.put(proxy)
 
     threads = []
-    for _ in range(max_threads*10):
+    for _ in range(max_threads*100):
         t = Thread(target=worker, args=(queue,))
         t.start()
         threads.append(t)
