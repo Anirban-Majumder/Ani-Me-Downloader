@@ -32,6 +32,7 @@ git clone https://github.com/anirbanmajumder0/ANI-me-downloader
 
 ```
 pip install -r requirements.txt
+pip install PyQt-Fluent-Widgets -i https://pypi.org/simple/
 ```
 
 3. Change the working directory
