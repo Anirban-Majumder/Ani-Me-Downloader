@@ -17,8 +17,7 @@ build and version of Python for your operating system [here](https://python.org/
 * `pysocks`
 * `beautifulsoup4`
 
-**macOS Users:** If you prefer, you can install Python via Homebrew rather than from source.\
-**windows Users:** Currently using pip to install PyAudio does not work, you need to use PyAudio wheel to install or have the required Microsoft C++ Build Tools.
+**macOS Users:** If you prefer, you can install Python via Homebrew rather than from source.
 
 ### 📜 Set up and Running the software
 
