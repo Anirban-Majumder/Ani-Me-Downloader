@@ -30,6 +30,7 @@ git clone https://github.com/anirbanmajumder0/ANI-me-downloader
 2. Install dependencies
 
 ```
+cd Ani-me-downloader
 pip install -r requirements.txt
 pip install PyQt-Fluent-Widgets -i https://pypi.org/simple/
 ```
@@ -37,7 +38,7 @@ pip install PyQt-Fluent-Widgets -i https://pypi.org/simple/
 3. Change the working directory
 
 ```
-cd ANI-me-downloader/src
+cd src
 ```
 
 4. Run the app
