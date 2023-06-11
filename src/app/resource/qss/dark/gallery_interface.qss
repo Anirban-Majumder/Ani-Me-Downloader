@@ -1,0 +1,9 @@
+GalleryInterface,
+ToolBar,
+#view {
+    background-color: transparent;
+}
+
+QScrollArea {
+    border: none;
+}
