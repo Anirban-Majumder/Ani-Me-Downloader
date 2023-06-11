@@ -5,13 +5,10 @@ import requests
 import logging
 from threading import Thread
 from queue import Queue
-import configparser
 
-config = configparser.ConfigParser()
-config.read('data/config.ini')
-proxy_path = config['DEFAULT']['proxy_path']
-test_proxy = config['DEFAULT']['test_proxy_path']
-max_threads = int(config['DEFAULT']['max_threads'])
+proxy_path = 'data/proxy.txt'
+test_proxy = 'data/test_proxy.txt'
+max_threads = 40
 
 def check_proxy(proxy):
     try:

@@ -155,3 +155,5 @@ cython_debug/
 .vscode/
 src/.vscode/
 src/data/anime_file.json
+src/test
+src/cache

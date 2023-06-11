@@ -1,16 +1,18 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import parse_qs, urlparse
-import os, re , json
+import os, json
 import socks, socket, requests
 from bs4 import BeautifulSoup
-import constants, configparser
+from .constants import Constants as constants
+from PyQt5.QtGui import QPixmap
+from .config import cfg
 
+download_path = cfg.downloadFolder.value
+anime_file = cfg.animeFile.value
+proxy = cfg.proxyPath.value
+max_threads = cfg.maxThread.value
+pingUrl = cfg.pingUrl.value
 
-config = configparser.ConfigParser()
-config.read('data/config.ini')
-proxy = config['DEFAULT']['proxy_path']
-download_path = config['DEFAULT']['download_path']
-max_threads = int(config['DEFAULT']['max_threads'])
 
 
 def compare_magnet_links(link1, link2):
@@ -63,17 +65,6 @@ def read_proxies_from_file(proxy_path):
         return f.read().splitlines()
 
 
-def save_animes(animes, filename):
-    data = [anime.to_dict() for anime in animes]
-    with open(filename, 'w') as f:
-        json.dump(data, f)
-
-
-def load_animes(Anime, filename):
-    with open(filename, 'r') as f:
-        data = json.load(f)
-    return [Anime.from_dict(data) for data in data]
-
 
 def remove_invalid_chars(path: str) -> str:
     invalid_chars = '<>:"/\\|?*'
@@ -101,14 +92,31 @@ def get_anime_list(name):
     data = json.loads(response.text)
     return data['data']['Page']['media']
 
+
+def get_img(url):
+    if not os.path.exists("cache"):
+        os.makedirs("cache")
+    url_split_last_part = url.split("/")[-1]
+    try:
+        pixmap = QPixmap(f"cache/{url_split_last_part}")
+        if not pixmap.isNull():
+            return pixmap
+        response = requests.get(url)
+        data = response.content
+        pixmap = QPixmap()
+        success = pixmap.loadFromData(data)
+        if success:
+            pixmap.save(f"cache/{url_split_last_part}")
+            return pixmap
+    except Exception as e:
+        print(f"Error loading image: {e}")
+    default_pixmap = QPixmap("resource/logo.png")
+    return default_pixmap
+
+
 def get_anime_detail(r):
     name = r["title"]["romaji"]
-    season_search = re.findall(r'season\s*(\d+)', name.lower())
-    if season_search:
-        season = season_search[0]
-        name = re.sub(r'season\s*\d+', '', name.lower()).strip()
-    else:
-        season = 1
+    season = r["season"]
     watch_url = get_watch_url(r["title"]["romaji"])
     airing = r["status"] == 'RELEASING'
     total_episodes = r["episodes"]
@@ -116,14 +124,15 @@ def get_anime_detail(r):
     if not total_episodes:
         total_episodes = 24
     output_dir = os.path.join(download_path, remove_invalid_chars(name))
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    #if not os.path.exists(output_dir):
+    #    os.makedirs(output_dir)
     episodes_to_download = list(range(1, total_episodes + 1))
     info = {"name": name, "format": r["format"], "airing": airing,
             "total_episodes": total_episodes, "img": r["coverImage"]["extraLarge"],
             "output_dir": output_dir, "episodes_to_download": episodes_to_download,
             "watch_url": watch_url, "id": r["id"], "season": season}
     return info
+
 
 def make_choice(list):
     start_index = 0
@@ -146,4 +155,3 @@ def make_choice(list):
         else:
             break
     return choice - 1
-
