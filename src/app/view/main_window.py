@@ -1,24 +1,25 @@
 # coding: utf-8
 import os, sys, requests, json, shutil, time
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt, pyqtSignal, QThread
+from PyQt5.QtCore import Qt, pyqtSignal, QThread, QEventLoop
 from PyQt5.QtWidgets import QApplication, QHBoxLayout, QWidget
 
 from qfluentwidgets import (NavigationInterface, NavigationItemPosition,
-                            InfoBar, InfoBarIcon, qrouter)
+                            InfoBar, InfoBarIcon, InfoBarPosition, qrouter)
 from qfluentwidgets import FluentIcon as FIF
 
 from .title_bar import CustomTitleBar
-from .base_interface import StackedWidget
 from .search_interface import SearchInterface
 from .library_interface import LibraryInterface
 from .download_interface import DownloadInterface
 from .setting_interface import SettingInterface, cfg
 
 from ..common.anime import Anime, constants
-from ..common.frameless_window import FramelessWindow
+from ..components.frameless_window import FramelessWindow
+from ..components.stackedwidget import StackedWidget
 from ..common.style_sheet import StyleSheet
 from ..common.utils import get_anime_detail, pingUrl, anime_file
+from ..common.proxy_utils import get_proxies, check_proxies
 
 
 
@@ -26,12 +27,18 @@ class WorkerThread(QThread):
     sendUpdateinfo = pyqtSignal(str)
     sendUpdateerror = pyqtSignal(str)
     sendUpdatesuccess = pyqtSignal(str)
+    sendListinfo = pyqtSignal(list)
+
+    def __init__(self, mainwindow):
+        super().__init__()
+        self.mainwindow = mainwindow
+        self.wait_for_res = False
 
     def check_network(self,url):
         try:
             res=requests.get(url)
-            if res.status_code==200:
-                return True
+            res.raise_for_status()
+            return True
         except Exception as e:
             pass
 
@@ -50,8 +57,15 @@ class WorkerThread(QThread):
             anime.signal.infoSignal.connect(self.sendinfo)
             anime.signal.errorSignal.connect(self.senderror)
             anime.signal.successSignal.connect(self.sendsuccess)
+            anime.signal.listSignal.connect(self.sendList)
+            self.mainwindow.sendDataSignal.connect(anime.receiveData)
             anime.start()
-            time.sleep(3)
+            if self.wait_for_res:
+                loop = QEventLoop()
+                self.mainwindow.sendDataSignal.connect(loop.quit)
+                loop.exec_()
+            else:
+                time.sleep(3)
 
     def save_anime_file(self,animes):
         if animes:
@@ -84,6 +98,10 @@ class WorkerThread(QThread):
     def sendsuccess(self,success):
         self.sendUpdatesuccess.emit(success)
 
+    def sendList(self, list):
+        self.sendListinfo.emit(list)
+        self.wait_for_res = True
+
     def run(self):
         if not self.check_network(pingUrl):
             self.senderror("There is something wrong with your Internet connection")
@@ -93,11 +111,16 @@ class WorkerThread(QThread):
             return
 
         animes = self.load_anime_file()
+        if not animes:
+            self.sendinfo("Add new anime by searching for it")
+            return
         self.start_animes(animes)
         self.save_anime_file(animes)
         self.sendinfo("To see more details, please click the 'Library' button")
+        check_proxies()
 
 class MainWindow(FramelessWindow):
+    sendDataSignal = pyqtSignal(list)
     def __init__(self):
         super().__init__()
         self.setTitleBar(CustomTitleBar(self))
@@ -132,11 +155,12 @@ class MainWindow(FramelessWindow):
         self.widgetLayout.addWidget(self.stackWidget)
         self.widgetLayout.setContentsMargins(0, 48, 0, 0)
 
-        self.workerThread = WorkerThread()
+        self.workerThread = WorkerThread(self)
 
         self.workerThread.sendUpdateinfo.connect(self.showInfo)
         self.workerThread.sendUpdatesuccess.connect(self.showSuccess)
         self.workerThread.sendUpdateerror.connect(self.showError)
+        self.workerThread.sendListinfo.connect(self.choose_torrent)
         self.searchInterface.addSignal.connect(self.add_anime)
         self.libraryInterface.deleteSignal.connect(self.remove_anime)
 
@@ -149,7 +173,7 @@ class MainWindow(FramelessWindow):
         self.addSubInterface(
             self.searchInterface, 'searchInterface', FIF.SEARCH, 'Search', NavigationItemPosition.TOP)
         self.addSubInterface(
-            self.libraryInterface, 'libraryInterface', FIF.LAYOUT, 'Library', NavigationItemPosition.TOP)
+            self.libraryInterface, 'libraryInterface', FIF.BOOK_SHELF, 'Library', NavigationItemPosition.TOP)
         self.navigationInterface.addSeparator()
         self.addSubInterface(
             self.downloadInterface, 'downloadInterface', FIF.DOWNLOAD, 'Download', NavigationItemPosition.TOP)
@@ -180,7 +204,7 @@ class MainWindow(FramelessWindow):
     def initWindow(self):
         self.resize(900, 680)
         self.setMinimumWidth(600)
-        self.setWindowIcon(QIcon('resource/logo.png'))
+        self.setWindowIcon(QIcon('app/resource/logo.png'))
         self.setWindowTitle('Ani-Me-Downloader')
         self.titleBar.setAttribute(Qt.WA_StyledBackground)
 
@@ -214,14 +238,16 @@ class MainWindow(FramelessWindow):
         self.workerThread.remove_anime(id)
 
     def showInfo(self,info):
-        w = InfoBar(
-            icon=InfoBarIcon.INFORMATION,
-            title='Info',
-            content=info,
-            duration=3000,
-            parent=self
-        )
-        w.show()
+        if  cfg.showNotification.value:
+            w = InfoBar(
+                icon=InfoBarIcon.INFORMATION,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                title='Info',
+                content=info,
+                duration=3000,
+                parent=self
+            )
+            w.show()
 
     def showError(self,error):
         w = InfoBar(
@@ -234,33 +260,33 @@ class MainWindow(FramelessWindow):
         w.show()
 
     def showSuccess(self,success):
-        w = InfoBar(
-            icon=InfoBarIcon.SUCCESS,
-            title='Success',
-            content=success,
-            duration=3000,
-            parent=self
-        )
-        w.show()
+        if  cfg.showNotification.value:
+            w = InfoBar(
+                icon=InfoBarIcon.SUCCESS,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                title='Success',
+                content=success,
+                duration=3000,
+                parent=self
+            )
+            w.show()
 
-if __name__ == '__main__':
-    # enable dpi scale
-    if cfg.get(cfg.dpiScale) == "Auto":
-        QApplication.setHighDpiScaleFactorRoundingPolicy(
-            Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    else:
-        os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "0"
-        os.environ["QT_SCALE_FACTOR"] = str(cfg.get(cfg.dpiScale))
+    def showFirst(self):
+        #show disclaimer
+        #show onboarding/into
+        pass
 
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+    def choose_torrent(self, torrent_list):
+        from ..components.customdialog import ListDialog
+        from PyQt5.QtWidgets import QListWidgetItem
+        self.torrent_box = ListDialog('Torrent Results',"Choose the torrent form the list:", self)
+        for torrent in torrent_list:
+            item = QListWidgetItem(torrent[0])
+            item.setData(Qt.UserRole, torrent)
+            self.torrent_box.list_view.addItem(item)
 
-    # create application
-    app = QApplication(sys.argv)
-    app.setAttribute(Qt.AA_DontCreateNativeWidgetSiblings)
-
-    # create main window
-    w = MainWindow()
-    w.show()
-
-    app.exec_()
+        if self.torrent_box.exec_():
+            selected_torrent = self.torrent_box.list_view.currentItem().data(Qt.UserRole)
+            self.sendDataSignal.emit(selected_torrent)
+        else:
+            self.sendDataSignal.emit([])

@@ -1,0 +1,8 @@
+BaseInterface,,
+#view {
+    background-color: transparent;
+}
+
+QScrollArea {
+    border: none;
+}

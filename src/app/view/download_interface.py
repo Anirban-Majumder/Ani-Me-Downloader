@@ -2,9 +2,9 @@
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtCore import Qt
 
-from .base_interface import GalleryInterface
+from .base_interface import BaseInterface
 
-class DownloadInterface(GalleryInterface):
+class DownloadInterface(BaseInterface):
     """ Download interface """
 
     def __init__(self, parent=None):

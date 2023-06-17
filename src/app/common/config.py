@@ -1,4 +1,5 @@
 # coding:utf-8
+import os
 from enum import Enum
 from qfluentwidgets import (qconfig, QConfig, ConfigItem, OptionsConfigItem, BoolValidator,
                             OptionsValidator,  EnumSerializer, FolderValidator,)
@@ -12,6 +13,7 @@ class MvQuality(Enum):
     SD = "SD"
     LD = "LD"
 
+
 class Config(QConfig):
     """ Config of application """
 
@@ -21,6 +23,8 @@ class Config(QConfig):
     # main window
     minimizeToTray = ConfigItem(
         "MainWindow", "MinimizeToTray", True, BoolValidator())
+    showNotification = ConfigItem(
+        "MainWindow", "ShowNotification", True, BoolValidator())
     dpiScale = OptionsConfigItem(
         "MainWindow", "DpiScale", "Auto", OptionsValidator([1, 1.25, 1.5, 1.75, 2, "Auto"]), restart=True)
 
@@ -31,16 +35,13 @@ class Config(QConfig):
     # software update
     checkUpdateAtStartUp = ConfigItem("Update", "CheckUpdateAtStartUp", False, BoolValidator())
 
-    animeFile = ConfigItem("Anime", "AnimeFile", "data//anime_file.json")
-    proxyPath = ConfigItem("Anime", "ProxyPath", "data//proxy.json")
-    testProxy = ConfigItem("Anime", "TestProxy", "data//test_proxy.json")
+    animeFile = ConfigItem("Anime", "AnimeFile", "data/anime_file.json")
+    proxyPath = ConfigItem("Anime", "ProxyPath", "data/proxy.txt")
+    testProxy = ConfigItem("Anime", "TestProxy", "data/test_proxy.txt")
     pingUrl = ConfigItem("Anime", "PingUrl", "https://www.google.com")
-    maxThread = ConfigItem("Anime", "MaxThread", 40)
-
-
-
-
+    firstTime = ConfigItem("Anime","FirstTime", True)
+    maxThread = ConfigItem("Anime", "MaxThread", 6)
 
 
 cfg = Config()
-qconfig.load('data//config.json', cfg)
+qconfig.load(os.path.join("data","config.json"), cfg)
