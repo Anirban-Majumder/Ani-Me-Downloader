@@ -1,5 +1,4 @@
-GalleryInterface,
-ToolBar,
+BaseInterface,
 #view {
     background-color: transparent;
 }

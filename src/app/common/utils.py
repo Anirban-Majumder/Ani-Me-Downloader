@@ -1,6 +1,8 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+# coding:utf-8
+import concurrent.futures
+from threading import Event
 from urllib.parse import parse_qs, urlparse
-import os, json
+import os, json, random
 import socks, socket, requests
 from bs4 import BeautifulSoup
 from .constants import Constants as constants
@@ -9,7 +11,7 @@ from .config import cfg
 
 download_path = cfg.downloadFolder.value
 anime_file = cfg.animeFile.value
-proxy = cfg.proxyPath.value
+proxy_file = cfg.proxyPath.value
 max_threads = cfg.maxThread.value
 pingUrl = cfg.pingUrl.value
 
@@ -23,47 +25,62 @@ def compare_magnet_links(link1, link2):
     return xt1 == xt2
 
 
-def get_nyaa_search_result(anime):
-    proxies = read_proxies_from_file(proxy)
-    results = []
-    with ThreadPoolExecutor(max_workers=max_threads) as executor:
-        futures = [executor.submit(get_nyaa_search_result_with_proxy, anime, proxy) for proxy in proxies]
-        for future in as_completed(futures):
-            result = future.result()
-            if result:
-                results.extend(result)
-                break
+def requests_get(url):
+    print(url)
+    stop_event = Event()
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept-Language': 'en-US,en;q=0.9'
+    }
+    with open(proxy_file, 'r') as f:
+        proxies = f.read().splitlines()
+    random.shuffle(proxies)
+    def fetch(proxy):
+        print(stop_event.is_set())
+        if not stop_event.is_set():
+            try:
+                socks.set_default_proxy(socks.SOCKS4, proxy.split(':')[0], int(proxy.split(':')[1]))
+                socket.socket = socks.socksocket
+                response = requests.get(url, timeout=5)
+                response.raise_for_status()
+                if response.status_code == 200:
+                    stop_event.set()
+                    return response
+            except:
+                pass
 
-    socks.set_default_proxy()
-    socket.socket = socks.socksocket
-    if results:
-        return results
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+        results = executor.map(fetch, proxies)
+        for result in results:
+            if result:
+                return result
+    print("No result from the site")
     return None
 
 
-def get_nyaa_search_result_with_proxy(anime, proxy):
+def get_nyaa_search_result(name):
     torrent = []
+    response = requests_get(f'https://nyaa.si/?q={name}&s=seeders&o=desc')
+    socks.set_default_proxy()
+    socket.socket = socks.socksocket
+    if not response:
+        return torrent
+    soup = BeautifulSoup(response.text, 'html.parser')
+    if "No results found" in soup.text:
+        return torrent
     try:
-        socks.set_default_proxy(socks.SOCKS4, proxy.split(':')[0], int(proxy.split(':')[1]))
-        socket.socket = socks.socksocket
-        url = f'https://nyaa.si/?q={anime}&s=seeders&o=desc'
-        response = requests.get(url, timeout=5)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
         result = soup.find('table', {'class': 'torrent-list'}).find('tbody').find_all('tr')
         for r in result:
             title = r.find('a', {'href': lambda x: x.startswith('/view') and not x.endswith('#comments')})['title']
             magnet_link = r.find('a', {'href': lambda x: x.startswith('magnet')})['href']
-            torrent.append([title, magnet_link])
-        return torrent
-    except requests.RequestException as e:
-        return torrent
-
-
-def read_proxies_from_file(proxy_path):
-    with open(proxy_path, 'r') as f:
-        return f.read().splitlines()
-
+            size=r.find('td', {'class': 'text-center'}).find_next_sibling('td').text
+            print(title, size)
+            torrent.append([title, magnet_link, size])
+    except Exception as e:
+        print(f"Error parsing nyaa.si: {e}")
+    return torrent
 
 
 def remove_invalid_chars(path: str) -> str:
@@ -75,7 +92,7 @@ def remove_invalid_chars(path: str) -> str:
 
 def get_watch_url(title):
     url = f'https://9anime.pl/filter?keyword={title}'
-    response = requests.get(url)
+    response = requests.get(url, timeout=5)
     soup = BeautifulSoup(response.text, 'html.parser')
     result = soup.select_one('div.ani.items > div > div > div > a')
     watch_url = 'https://9anime.pl' + result['href']
@@ -119,39 +136,13 @@ def get_anime_detail(r):
     season = r["season"]
     watch_url = get_watch_url(r["title"]["romaji"])
     airing = r["status"] == 'RELEASING'
-    total_episodes = r["episodes"]
-    #check if total episodes is null
-    if not total_episodes:
-        total_episodes = 24
+    total_episodes = 24 if not r["episodes"] else r["episodes"]
     output_dir = os.path.join(download_path, remove_invalid_chars(name))
-    #if not os.path.exists(output_dir):
-    #    os.makedirs(output_dir)
-    episodes_to_download = list(range(1, total_episodes + 1))
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    episodes_to_download = list(range(r["from"], r["to"]+ 1))
     info = {"name": name, "format": r["format"], "airing": airing,
             "total_episodes": total_episodes, "img": r["coverImage"]["extraLarge"],
             "output_dir": output_dir, "episodes_to_download": episodes_to_download,
             "watch_url": watch_url, "id": r["id"], "season": season}
     return info
-
-
-def make_choice(list):
-    start_index = 0
-    end_index = min(len(list), 5)
-    while True:
-        for i in range(start_index, end_index):
-            name = list[i][0]
-            print(f"{i + 1}. {name}")
-        print(f"{end_index + 1}. Show more")
-        print(f"{end_index + 2}. None of the above")
-        choice = input("Enter your choice: ")
-        if not choice.isdigit():
-            return
-        choice = int(choice)
-        if choice >= end_index + 2 or choice < 1:
-            return
-        elif choice == end_index + 1:
-            start_index += 4
-            end_index = min(len(list), end_index + 4)
-        else:
-            break
-    return choice - 1

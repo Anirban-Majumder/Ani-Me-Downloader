@@ -9,6 +9,11 @@ from app.common.config import cfg
 from app.view.main_window import MainWindow
 
 
+# run on first time setup
+if not os.path.exists(os.path.join(os.path.dirname(__file__), "data")):
+    from setup import setup
+    setup(cfg)
+
 # enable dpi scale
 if cfg.get(cfg.dpiScale) == "Auto":
     QApplication.setHighDpiScaleFactorRoundingPolicy(

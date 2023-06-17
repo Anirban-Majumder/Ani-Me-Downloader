@@ -1,18 +1,124 @@
 # coding:utf-8
-import json
-from PyQt5.QtGui import QDesktopServices, QFont
-from PyQt5.QtWidgets import QLabel
-from PyQt5.QtCore import Qt, QUrl, pyqtSignal
-from PyQt5.QtWidgets import  QVBoxLayout, QHBoxLayout, QSizePolicy, QWidget, QFrame
-from qfluentwidgets import FlowLayout, PushButton
-
-from .base_interface import GalleryInterface, ImageLabel, ScrollArea
+import json,time
+from PyQt5.QtCore import Qt, QRect, QRectF, QUrl, pyqtSignal
+from PyQt5.QtGui import  QPainter, QColor, QPainterPath,  QDesktopServices, QFont,QPalette
+from PyQt5.QtWidgets import (QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame,
+                             QWidget, QVBoxLayout, QLabel, QSizePolicy, QWidget, QFrame)
+from qfluentwidgets import (FluentIcon, FlowLayout, PushButton,
+                            PrimaryToolButton)
+from .base_interface import BaseInterface, ScrollArea
 
 from ..common.style_sheet import StyleSheet
 from ..common.utils import get_img
+from ..common.config import cfg
+
+class ImageLabel(QLabel):
+    delete_signal = pyqtSignal(int)
+
+    def __init__(self, anime, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.anime = anime
+        self.setMouseTracking(True)
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+    def paintEvent(self, event):
+        #TODO make the rect slyanted
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        # Draw the image with rounded corners
+        rect = QRect(0, 0, self.width(), self.height())
+        rectf = QRectF(0, 0, self.width(), self.height())
+        path = QPainterPath()
+        path.addRoundedRect(rectf, 10, 10)
+        painter.setClipPath(path)
+        if self.pixmap():
+            painter.drawPixmap(rect, self.pixmap())
+
+        # Draw a black rectangle at the bottom of the image
+        bottom_rect_height = int(self.height() * 0.08)
+        bottom_rect = QRect(0, self.height() - bottom_rect_height, self.width(), bottom_rect_height)
+        painter.fillRect(bottom_rect, QColor('black'))
+
+        # Set the font and pen for drawing text
+        font = painter.font()
+        font.setPixelSize(10)
+        painter.setFont(font)
+        painter.setPen(QColor('white'))
+
+        # Draw the current airing episode (if anime is airing)
+        if self.anime['airing']:
+            current_episode_text = f"A{self.anime['last_aired_episode']}"
+            current_episode_rect = QRect(0, self.height() - bottom_rect_height + 2, 25, bottom_rect_height - 4)
+            painter.fillRect(current_episode_rect, QColor('green'))
+            painter.drawText(current_episode_rect, Qt.AlignCenter, current_episode_text)
+
+        # Draw the number of downloaded episodes
+        downloaded_episodes_text = f"D{len(self.anime['episodes_downloaded'])}"
+        downloaded_episodes_rect = QRect(self.width()-50, self.height() - bottom_rect_height + 2, 25, bottom_rect_height - 4)
+        painter.fillRect(downloaded_episodes_rect, QColor('blue'))
+        painter.drawText(downloaded_episodes_rect, Qt.AlignCenter, downloaded_episodes_text)
+
+        # Draw the total number of episodes
+        total_episodes_text = f"T{self.anime['total_episodes']}"
+        total_episodes_rect = QRect(self.width()-25, self.height() - bottom_rect_height + 2, 25, bottom_rect_height - 4)
+        painter.fillRect(total_episodes_rect, QColor('grey'))
+        painter.drawText(total_episodes_rect, Qt.AlignCenter, total_episodes_text)
+
+    def enterEvent(self, event):
+        style = """
+            QLabel {
+                color: white;
+                qproperty-alignment: 'AlignCenter';
+                border-radius: 10px;
+            };
+        """
+        style2=f"background-color: {cfg.themeColor.value.name()};"
+        delete_button = PrimaryToolButton(FluentIcon.DELETE)
+        delete_button.clicked.connect(self.on_delete_button_clicked)
+        if self.anime['airing']:
+            current_time = int(time.time())
+            time_difference = self.anime['next_eta'] - current_time
+            days = time_difference // (24 * 3600)
+            time_difference = time_difference % (24 * 3600)
+            hours = time_difference // 3600
+            time_difference %= 3600
+            minutes = time_difference // 60
+            next_air= QLabel(f"Next Airing episode: {self.anime['last_aired_episode']+1}")
+            time_left = QLabel(f"Time Left: {days} days {hours} hrs" if days else f"Time Left: {hours} hrs {minutes} mins")
+        ep_downloaded = QLabel(f"Episodes Downloaded: {len(self.anime['episodes_downloaded'])}")
+        total_ep = QLabel(f"Total Episodes: {self.anime['total_episodes']}")
+
+        self.layout.addWidget(delete_button, alignment=Qt.AlignTop | Qt.AlignRight)
+        labels=[next_air,time_left,ep_downloaded,total_ep] if self.anime['airing'] else [ep_downloaded,total_ep]
+        for label in labels:
+            label.setMinimumHeight(30)
+            label.setMaximumHeight(30)
+            self.layout.addWidget(label, alignment=Qt.AlignTop)
+
+        self.layout.setSpacing(5)
+        self.setStyleSheet(style+style2)
 
 
-class LibraryInterface(GalleryInterface):
+    def leaveEvent(self, event):
+        self.setStyleSheet("background-color: transparent;")
+
+        #remove all labels
+        labels = self.findChildren(QLabel)
+        for label in labels:
+            label.deleteLater()
+
+        # Remove delete button
+        delete_button = self.findChild(PrimaryToolButton)
+        if delete_button:
+            delete_button.deleteLater()
+
+    def on_delete_button_clicked(self):
+        self.delete_signal.emit(self.anime['id'])
+
+
+class LibraryInterface(BaseInterface):
     """ Library interface """
 
     deleteSignal = pyqtSignal(int)

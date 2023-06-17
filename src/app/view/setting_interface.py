@@ -88,6 +88,13 @@ class SettingInterface(ScrollArea):
             configItem=cfg.minimizeToTray,
             parent=self.mainPanelGroup
         )
+        self.showNotificationCard = SwitchSettingCard(
+            FIF.MESSAGE,
+            self.tr('Show notification'),
+            self.tr('Ani-Me-Downloader will show a notifications about things...'),
+            configItem=cfg.showNotification,
+            parent=self.mainPanelGroup
+        )
         # update software
         self.updateSoftwareGroup = SettingCardGroup(
             "Software update", self.scrollWidget)
@@ -123,6 +130,7 @@ class SettingInterface(ScrollArea):
         self.downloadGroup.addSettingCard(self.downloadFolderCard)
         self.qualityandprovider.addSettingCard(self.onlineMvQualityCard)
         self.mainPanelGroup.addSettingCard(self.minimizeToTrayCard)
+        self.mainPanelGroup.addSettingCard(self.showNotificationCard)
         self.personalGroup.addSettingCard(self.themeCard)
         self.personalGroup.addSettingCard(self.themeColorCard)
         self.personalGroup.addSettingCard(self.zoomCard)
