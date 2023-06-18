@@ -23,7 +23,7 @@ class BaseInterface(ScrollArea):
         self.vBoxLayout.setContentsMargins(36, 20, 36, 36)
 
         self.view.setObjectName('view')
-        StyleSheet.BASE_INTERFACE.apply(self)
+        #StyleSheet.BASE_INTERFACE.apply(self)
 
     def resizeEvent(self, e):
         super().resizeEvent(e)

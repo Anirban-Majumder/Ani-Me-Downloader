@@ -1,4 +1,4 @@
-BaseInterface,,
+BaseInterface,
 #view {
     background-color: transparent;
 }

@@ -3,6 +3,7 @@ import os
 import sys
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFontDatabase, QFont
 from PyQt5.QtWidgets import QApplication
 
 from app.common.config import cfg
@@ -28,6 +29,11 @@ QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 # create application
 app = QApplication(sys.argv)
 app.setAttribute(Qt.AA_DontCreateNativeWidgetSiblings)
+
+# set custom font
+QFontDatabase.addApplicationFont("app/resource/Yellowtail.ttf")
+font = QFont("Yellowtail")
+app.setFont(font)
 
 # create main window
 w = MainWindow()

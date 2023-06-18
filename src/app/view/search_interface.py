@@ -4,7 +4,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from qfluentwidgets import SearchLineEdit, MessageBox, StateToolTip
 
 from ..common.utils import get_anime_list
-
+from ..common.style_sheet import StyleSheet
 from .base_interface import BaseInterface
 
 class SearchInterface(BaseInterface):
@@ -16,13 +16,7 @@ class SearchInterface(BaseInterface):
 
         self.vBoxLayout.addSpacing(100)
         self.label = QLabel("Ani-Me Downloader")
-        font = self.label.font()
-        font.setPointSize(24) # Set font size
-        font.setBold(True) # Set font to bold
-        font.setItalic(True) # Set font to italic
-        self.label.setFont(font)
-        self.label.setStyleSheet("color: #ffffff")
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setObjectName('title')
         self.vBoxLayout.addWidget(self.label, 0, Qt.AlignCenter)
 
         self.vBoxLayout.addSpacing(50)
@@ -35,6 +29,7 @@ class SearchInterface(BaseInterface):
         self.search_field.searchSignal.connect(self.on_search_button_clicked)
         self.search_field.clearSignal.connect(lambda: self.clear_line)
         self.search_field.returnPressed.connect(self.on_search_button_clicked)
+        StyleSheet.SEARCH_INTERFACE.apply(self)
 
 
     def on_search_button_clicked(self):
