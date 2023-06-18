@@ -12,5 +12,6 @@ QLabel#settingLabel {
     font: 33px;
     background-color: transparent;
     color: white;
+    font-family: "YellowTail";
 }
 

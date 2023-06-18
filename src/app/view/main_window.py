@@ -117,7 +117,7 @@ class WorkerThread(QThread):
         self.start_animes(animes)
         self.save_anime_file(animes)
         self.sendinfo("To see more details, please click the 'Library' button")
-        check_proxies()
+        #check_proxies()
 
 class MainWindow(FramelessWindow):
     sendDataSignal = pyqtSignal(list)

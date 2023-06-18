@@ -9,5 +9,6 @@ QScrollArea {
 
 QLabel#settingLabel {
     font: 33px;
+    font-family: "YellowTail";
     background-color: transparent;
 }

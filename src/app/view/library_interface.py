@@ -71,8 +71,8 @@ class ImageLabel(QLabel):
             QLabel {
                 color: white;
                 qproperty-alignment: 'AlignCenter';
-                border-radius: 10px;
-            };
+                border-radius: 20px;
+            }
         """
         style2=f"background-color: {cfg.themeColor.value.name()};"
         delete_button = PrimaryToolButton(FluentIcon.DELETE)
@@ -95,10 +95,11 @@ class ImageLabel(QLabel):
         for label in labels:
             label.setMinimumHeight(30)
             label.setMaximumHeight(30)
+            label.setStyleSheet(style)
             self.layout.addWidget(label, alignment=Qt.AlignTop)
 
         self.layout.setSpacing(5)
-        self.setStyleSheet(style+style2)
+        self.setStyleSheet(style2)
 
 
     def leaveEvent(self, event):
@@ -179,6 +180,7 @@ class LibraryInterface(BaseInterface):
 
             # Create a label for the title
             name = anime['name'] if len(anime['name']) <= 28 else anime['name'][:28] + '...'
+            
             title_label = QLabel(name)
             title_label.setObjectName('animeTitle')
             title_label.setAlignment(Qt.AlignCenter)
