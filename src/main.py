@@ -31,8 +31,12 @@ app = QApplication(sys.argv)
 app.setAttribute(Qt.AA_DontCreateNativeWidgetSiblings)
 
 # set custom font
+#QFontDatabase.addApplicationFont("app/resource/Diphylleia.ttf")
 QFontDatabase.addApplicationFont("app/resource/Yellowtail.ttf")
-font = QFont("Yellowtail")
+#font = QFont("Yellowtail")
+#font = QFont("Diphylleia")
+QFontDatabase.addApplicationFont("app/resource/Aldrich.ttf")
+font = QFont("Aldrich")
 app.setFont(font)
 
 # create main window

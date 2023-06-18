@@ -9,8 +9,8 @@ QScrollArea {
 }
 
 QLabel#title {
-    font-size: 24px;
+    font-size: 66px;
     font-weight: bold;
-    font-style: italic;
+    font-family: "YellowTail";
     qproperty-alignment: AlignCenter;
 }
