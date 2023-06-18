@@ -156,9 +156,8 @@ class LibraryInterface(BaseInterface):
 
         if not self.anime_data:
             title_label = QLabel("Add Anime from Search to see here")
-            title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #fff; font-style: italic;")
-            title_label.setAlignment(Qt.AlignCenter)
-            self.grid_layout.addWidget(title_label)
+            title_label.setObjectName("title")
+            self.vBoxLayout.addWidget(title_label, Qt.AlignCenter)
 
         for anime in self.anime_data:
             # Create a vertical layout for each grid cell
@@ -181,7 +180,7 @@ class LibraryInterface(BaseInterface):
             # Create a label for the title
             name = anime['name'] if len(anime['name']) <= 28 else anime['name'][:28] + '...'
             title_label = QLabel(name)
-            title_label.setStyleSheet("font-size: 10px; font-weight: bold; color: #fff;")
+            title_label.setObjectName('animeTitle')
             title_label.setAlignment(Qt.AlignCenter)
             cell_layout.addWidget(title_label)
 

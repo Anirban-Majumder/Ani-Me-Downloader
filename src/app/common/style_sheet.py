@@ -7,14 +7,13 @@ from qfluentwidgets import StyleSheetBase, Theme, isDarkTheme, qconfig
 class StyleSheet(StyleSheetBase, Enum):
     """ Style sheet  """
 
-    LINK_CARD = "link_card"
+    SEARCH_INTERFACE = "search_interface"
     MAIN_WINDOW = "main_window"
-    SAMPLE_CARD = "sample_card"
+    DOWNLOAD_INTERFACE = "download_interface"
     LIBRARY_INTERFACE = "library_interface"
     ICON_INTERFACE = "icon_interface"
     VIEW_INTERFACE = "view_interface"
     SETTING_INTERFACE = "setting_interface"
-    GALLERY_INTERFACE = "gallery_interface"
     BASE_INTERFACE = "base_interface"
     NAVIGATION_VIEW_INTERFACE = "navigation_view_interface"
 

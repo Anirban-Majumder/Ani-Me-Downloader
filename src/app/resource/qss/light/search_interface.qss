@@ -1,27 +1,16 @@
 BaseInterface,
-LibraryInterface,
+SearchInterface,
 #view {
     background-color: transparent;
 }
 
 QScrollArea {
     border: none;
-    background-color: transparent;
-}
-
-QFrame {
-    background-color: transparent;
 }
 
 QLabel#title {
     font-size: 24px;
     font-weight: bold;
     font-style: italic;
-    qproperty-alignment: AlignCenter;
-}
-
-QLabel#animeTitle {
-    font-size: 10px;
-    font-weight: bold;
     qproperty-alignment: AlignCenter;
 }

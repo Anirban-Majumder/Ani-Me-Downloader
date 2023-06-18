@@ -1,0 +1,16 @@
+BaseInterface,
+SearchInterface,
+#view {
+    background-color: transparent;
+}
+
+QScrollArea {
+    border: none;
+}
+
+QLabel#title {
+    font-size: 60px;
+    font-weight: bold;
+    color: #ffffff;
+    qproperty-alignment: AlignCenter;
+}

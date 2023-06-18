@@ -1,4 +1,5 @@
-SettingInterface,
+BaseInterface,
+LibraryInterface,
 #view {
     background-color: transparent;
 }
@@ -10,4 +11,19 @@ QScrollArea {
 
 QFrame {
     background-color: transparent;
+}
+
+QLabel#title {
+    font-size: 24px;
+    font-weight: bold;
+    font-style: italic;
+    color: #ffffff;
+    qproperty-alignment: AlignCenter;
+}
+
+QLabel#animeTitle {
+    font-size: 10px;
+    font-weight: bold;
+    color: #ffffff;
+    qproperty-alignment: AlignCenter;
 }
