@@ -1,8 +1,8 @@
 import os
-from app.common.config import cfg
+from PyQt5.QtGui import QColor
 from app.common.proxy_utils import *
 
-def setup():
+def setup(cfg):
     try:
         res=requests.get("https://www.google.com")
         res.raise_for_status()
@@ -21,6 +21,7 @@ def setup():
     cfg.set(cfg.animeFile, anime_file)
     cfg.set(cfg.proxyPath, os.path.join(os.path.dirname(__file__), "data", "proxy.txt"))
     cfg.set(cfg.testProxy, os.path.join(os.path.dirname(__file__), "data", "test_proxy.txt"))
+    cfg.set(cfg.themeColor, QColor('#ff0162'))
     cfg.save()
     get_proxies()
     print("This will take a while, please wait...")
