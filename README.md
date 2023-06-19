@@ -1,6 +1,6 @@
 ## ANI-me-downloader
 
-# 👋 Hi, this is a cli/gui interface with which u can use as a broswer(in regards to anime) and get freely available files and links. plese check [`disclaimer`](disclaimer.md).
+# 👋 Hi, this is a gui interface with which u can use as a broswer(in regards to anime) and get freely available files and links. plese check [`disclaimer`](disclaimer.md).
 
 ### 📝Requirements
 
