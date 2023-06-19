@@ -36,6 +36,7 @@ QLabel#animeTitle {
 
 QLabel#animeInfo {
     font-size: 10px;
+    color: white;
     font-weight: 500;
     qproperty-alignment: AlignCenter;
     border-radius: 8px;

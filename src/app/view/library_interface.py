@@ -50,19 +50,19 @@ class ImageLabel(QLabel):
         # Draw the current airing episode (if anime is airing)
         if self.anime['airing']:
             current_episode_text = f"A{self.anime['last_aired_episode']}"
-            current_episode_rect = QRect(0, self.height() - bottom_rect_height + 2, 25, bottom_rect_height - 4)
+            current_episode_rect = QRect(0, self.height() - bottom_rect_height, 25, bottom_rect_height)
             painter.fillRect(current_episode_rect, QColor('green'))
             painter.drawText(current_episode_rect, Qt.AlignCenter, current_episode_text)
 
         # Draw the number of downloaded episodes
         downloaded_episodes_text = f"D{len(self.anime['episodes_downloaded'])}"
-        downloaded_episodes_rect = QRect(self.width()-50, self.height() - bottom_rect_height + 2, 25, bottom_rect_height - 4)
+        downloaded_episodes_rect = QRect(self.width()-50, self.height() - bottom_rect_height , 25, bottom_rect_height)
         painter.fillRect(downloaded_episodes_rect, QColor('blue'))
         painter.drawText(downloaded_episodes_rect, Qt.AlignCenter, downloaded_episodes_text)
 
         # Draw the total number of episodes
         total_episodes_text = f"T{self.anime['total_episodes']}"
-        total_episodes_rect = QRect(self.width()-25, self.height() - bottom_rect_height + 2, 25, bottom_rect_height - 4)
+        total_episodes_rect = QRect(self.width()-25, self.height() - bottom_rect_height , 25, bottom_rect_height)
         painter.fillRect(total_episodes_rect, QColor('grey'))
         painter.drawText(total_episodes_rect, Qt.AlignCenter, total_episodes_text)
 

@@ -38,7 +38,7 @@ def requests_get(url):
         proxies = f.read().splitlines()
     random.shuffle(proxies)
     def fetch(proxy):
-        print(stop_event.is_set())
+        #print(stop_event.is_set())
         if not stop_event.is_set():
             try:
                 socks.set_default_proxy(socks.SOCKS4, proxy.split(':')[0], int(proxy.split(':')[1]))
@@ -75,18 +75,19 @@ def get_nyaa_search_result(name):
         for r in result:
             title = r.find('a', {'href': lambda x: x.startswith('/view') and not x.endswith('#comments')})['title']
             magnet_link = r.find('a', {'href': lambda x: x.startswith('magnet')})['href']
-            size=r.find('td', {'class': 'text-center'}).find_next_sibling('td').text
-            print(title, size)
+            size= r.find('td', {'class': 'text-center'}).find_next_sibling('td').text
+            seed= r.find('td', {'class': 'text-center'}).find_next_sibling('td').find_next_sibling('td').text
+            print(seed, size, title)
             torrent.append([title, magnet_link, size])
     except Exception as e:
         print(f"Error parsing nyaa.si: {e}")
     return torrent
 
 
-def remove_invalid_chars(path: str) -> str:
+def remove_invalid_chars(path, replace_with=''):
     invalid_chars = '<>:"/\\|?*'
     for char in invalid_chars:
-        path = path.replace(char, '')
+        path = path.replace(char, replace_with)
     return path
 
 
@@ -132,9 +133,9 @@ def get_img(url):
 
 
 def get_anime_detail(r):
-    name = r["title"]["romaji"]
-    season = r["season"]
+    name = remove_invalid_chars(r["title"]["romaji"])
     watch_url = get_watch_url(r["title"]["romaji"])
+    season = get_season(watch_url)
     airing = r["status"] == 'RELEASING'
     total_episodes = 24 if not r["episodes"] else r["episodes"]
     output_dir = os.path.join(download_path, remove_invalid_chars(name))
@@ -148,6 +149,19 @@ def get_anime_detail(r):
     return info
 
 
+def get_season(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        soup= BeautifulSoup(response.text, 'html.parser')
+        try:
+            season = soup.find('div', {'class': 'swiper-slide season active'}).find('div', {'class': 'name'}).text.strip()
+            season = int(season.split(' ')[1])
+        except Exception as e:
+            season = 1
+            print(e)
+    return season
+
+
 def get_time_diffrence(req_time):
 
     current_time = int(time.time())
@@ -159,6 +173,7 @@ def get_time_diffrence(req_time):
     minutes = time_difference // 60
 
     return days, hours, minutes
+
 
 def check_network(url="https://google.com"):
     try:
