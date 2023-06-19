@@ -32,7 +32,8 @@ class WorkerThread(QThread):
     def __init__(self, mainwindow):
         super().__init__()
         self.mainwindow = mainwindow
-        self.wait_for_res = False
+        self.mainwindow.sendChoice.connect(self.onChoice)
+        self.animes = []
 
     def load_anime_file(self):
         try:
@@ -44,42 +45,36 @@ class WorkerThread(QThread):
             animes = []
         return animes
 
-    def start_animes(self,animes):
-        for anime in animes:
+    def start_animes(self):
+        for anime in self.animes:
             anime.signal.infoSignal.connect(self.sendinfo)
             anime.signal.errorSignal.connect(self.senderror)
             anime.signal.successSignal.connect(self.sendsuccess)
             anime.signal.listSignal.connect(self.sendList)
-            self.mainwindow.sendDataSignal.connect(anime.receiveData)
             anime.start()
-            if self.wait_for_res:
-                loop = QEventLoop()
-                self.mainwindow.sendDataSignal.connect(loop.quit)
-                loop.exec_()
-            else:
-                time.sleep(3)
+            time.sleep(3)
 
-    def save_anime_file(self,animes):
-        if animes:
-                data = [anime.to_dict() for anime in animes]
+    def save_anime_file(self):
+        if self.animes:
+                data = [anime.to_dict() for anime in self.animes]
                 with open(anime_file, 'w') as f:
                     json.dump(data, f, indent=4)
 
     def add_anime(self,anime):
-        animes = self.load_anime_file()
-        animes.insert(0, anime)
-        self.save_anime_file(animes)
+        self.animes = self.load_anime_file()
+        self.animes.insert(0, anime)
+        self.save_anime_file()
 
     def remove_anime(self,id):
-        animes = self.load_anime_file()
-        for anime in animes:
+        self.animes = self.load_anime_file()
+        for anime in self.animes:
             if anime.id == id:
                 try:
                     shutil.rmtree(anime.output_dir)
                 except Exception as e:
                     self.senderror(f"Sorry, can't delete the folder- {anime.output_dir}")
-                animes.remove(anime)
-        self.save_anime_file(animes)
+                self.animes.remove(anime)
+        self.save_anime_file(self.animes)
 
     def sendinfo(self,info):
         self.sendUpdateinfo.emit(info)
@@ -92,7 +87,14 @@ class WorkerThread(QThread):
 
     def sendList(self, list):
         self.sendListinfo.emit(list)
-        self.wait_for_res = True
+
+    def onChoice(self, list):
+        for anime in self.animes:
+            if anime.id == list[0]:
+                choice = list[1]
+                anime.receiveData(choice)
+                break
+        self.save_anime_file()
 
     def run(self):
         if not check_network():
@@ -102,17 +104,18 @@ class WorkerThread(QThread):
             self.senderror("There is something wrong with your qBittorrent")
             return
 
-        animes = self.load_anime_file()
-        if not animes:
+        self.animes = self.load_anime_file()
+        if not self.animes:
             self.sendinfo("Add new anime by searching for it")
             return
-        self.start_animes(animes)
-        self.save_anime_file(animes)
+        self.start_animes()
+        self.save_anime_file()
         self.sendinfo("To see more details, please click the 'Library' button")
         #check_proxies()
 
+
 class MainWindow(FramelessWindow):
-    sendDataSignal = pyqtSignal(list)
+    sendChoice = pyqtSignal(list)
     def __init__(self):
         super().__init__()
         self.setTitleBar(CustomTitleBar(self))
@@ -218,8 +221,7 @@ class MainWindow(FramelessWindow):
         self.titleBar.move(46, 0)
         self.titleBar.resize(self.width()-46, self.titleBar.height())
 
-    def add_anime(self, anime):
-        result = get_anime_detail(anime)
+    def add_anime(self, result):
         new_anime = Anime(**result)
         self.switchTo(self.libraryInterface)
         self.libraryInterface.add_anime(new_anime.to_dict())
@@ -268,17 +270,19 @@ class MainWindow(FramelessWindow):
         #show onboarding/into
         pass
 
-    def choose_torrent(self, torrent_list):
+    def choose_torrent(self, list):
         from ..components.customdialog import ListDialog
         from PyQt5.QtWidgets import QListWidgetItem
         self.torrent_box = ListDialog('Torrent Results',"Choose the torrent form the list:", self)
+        id, torrent_list = list[0], list[1]
         for torrent in torrent_list:
-            item = QListWidgetItem(torrent[0])
+            text = f"{torrent[0]} \n {torrent[2]}"
+            item = QListWidgetItem(text)
             item.setData(Qt.UserRole, torrent)
             self.torrent_box.list_view.addItem(item)
 
         if self.torrent_box.exec_():
             selected_torrent = self.torrent_box.list_view.currentItem().data(Qt.UserRole)
-            self.sendDataSignal.emit(selected_torrent)
+            self.sendChoice.emit([id,selected_torrent])
         else:
-            self.sendDataSignal.emit([])
+            self.sendChoice.emit([])

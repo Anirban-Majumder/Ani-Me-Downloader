@@ -69,4 +69,7 @@ def check_proxies():
     with open(proxy_file, 'r') as f:
         for line in f:
             li.append(line.strip())
+
+    socks.set_default_proxy()
+    socket.socket = socks.socksocket
     print(f"Proxy check Done\nTotal working proxies: {len(li)}")

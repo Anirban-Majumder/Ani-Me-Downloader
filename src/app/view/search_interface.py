@@ -3,9 +3,8 @@ from PyQt5.QtWidgets import QLabel, QListWidgetItem
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from qfluentwidgets import SearchLineEdit, MessageBox, StateToolTip
 
-from ..common.utils import get_anime_list, check_network
-from ..common.style_sheet import StyleSheet
 from .base_interface import BaseInterface
+from ..common.style_sheet import StyleSheet
 
 
 class SearchThread(QThread):
@@ -16,6 +15,7 @@ class SearchThread(QThread):
         self.name = name
 
     def run(self):
+        from ..common.utils import get_anime_list, check_network
         if not check_network():
             self.statebox.setState(True)
             title = 'No Internet Connection'
@@ -68,6 +68,7 @@ class SearchInterface(BaseInterface):
     def on_search_finished(self, anime_list):
         self.anime_list = anime_list
         from ..components.customdialog import ListDialog, AnimeDialog
+        from ..common.utils import remove_invalid_chars, get_watch_url, get_season, os, download_path
         self.statebox.setState(True)
         self.clear_line()
 
@@ -84,6 +85,10 @@ class SearchInterface(BaseInterface):
                 self.message_box.list_view.addItem(item)
             if self.message_box.exec_():
                 selected_anime = self.message_box.list_view.currentItem().data(Qt.UserRole)
+                name = remove_invalid_chars(selected_anime["title"]["romaji"])
+                watch_url = get_watch_url(selected_anime["title"]["romaji"])
+                season = get_season(watch_url)
+                selected_anime["season"] = season
                 infobox=AnimeDialog(selected_anime,self)
                 infobox.contentLabel.setText("Make sure this info is correct and make corrections as necessary"+" "*40)
                 if infobox.exec_():
@@ -97,7 +102,19 @@ class SearchInterface(BaseInterface):
                         selected_anime['nextAiringEpisode'] = None
                     selected_anime['from'] = infobox.from_download.value()
                     selected_anime['to'] = infobox.to_download.value()
-                    self.addSignal.emit(selected_anime)
+
+                    airing = selected_anime["status"] == 'RELEASING'
+                    total_episodes = 24 if not selected_anime["episodes"] else selected_anime["episodes"]
+                    output_dir = os.path.join(download_path, remove_invalid_chars(name))
+                    if not os.path.exists(output_dir):
+                        os.makedirs(output_dir)
+                    episodes_to_download = list(range(selected_anime["from"], selected_anime["to"]+ 1))
+                    info = {"name": name, "format": selected_anime["format"], "airing": airing,
+                    "total_episodes": total_episodes, "img": selected_anime["coverImage"]["extraLarge"],
+                    "output_dir": output_dir, "episodes_to_download": episodes_to_download,
+                    "watch_url": watch_url, "id": selected_anime["id"], "season": season}
+
+                    self.addSignal.emit(info)
 
 
     def clear_line(self):

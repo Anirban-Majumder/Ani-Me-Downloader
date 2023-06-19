@@ -49,28 +49,28 @@ class Anime:
 
     def download_episodewise(self):
         not_failed = True
+        list = self.get_torrent_list(self.name)
         while self.episodes_to_download and self.episodes_to_download[0] <= self.last_aired_episode and not_failed:
-            not_failed = self.download_episode(self.episodes_to_download[0])
+            not_failed = self.download_episode(self.episodes_to_download[0], list)
 
-    def download_episode(self, episode_number):
+    def download_episode(self, episode_number, list):
         magnet = ''
         name = self.name
         self.signal.infoSignal.emit(f"Looking for {name} episode {episode_number}...")
-        list = self.get_torrent_list(name)
         if not list:
             return False
         for title, magnet_link, size in list:
             if '1080p' in title.lower():
-                if '[subsplease]' in title.lower():
+                if '[ember]' in title.lower():
+                    additional = ('S'+ str(self.season) if self.season > 9 else 'S0' + str(self.season))+('E'+str(episode_number) if episode_number > 9 else 'E0'+str(episode_number))
+                    if name.lower() in title.lower() and additional.lower() in title.lower():
+                        magnet = magnet_link
+                        break
+                elif '[subsplease]' in title.lower():
                     e = (' - ' + str(episode_number) if episode_number > 9 else (' - 0' + str(episode_number)))
                     s=(' S'+ str(self.season) if self.season >= 2 else '')
                     name = self.name + s + e
                     if name.lower() in title.lower():
-                        magnet = magnet_link
-                        break
-                elif '[ember]' in title.lower():
-                    additional = ('S'+ str(self.season) if self.season > 9 else 'S0' + str(self.season))+('E'+str(episode_number) if episode_number > 9 else 'E0'+str(episode_number))
-                    if name.lower() in title.lower() and additional.lower() in title.lower():
                         magnet = magnet_link
                         break
         if not magnet:
@@ -88,6 +88,7 @@ class Anime:
         self.signal.infoSignal.emit(f"Looking for {name}...")
         list =  self.get_torrent_list(name)
         if not list:
+            self.signal.errorSignal.emit("No torrent found!")
             return False
         if self.format == 'MOVIE':
             season = ' '
@@ -101,8 +102,9 @@ class Anime:
                         magnet = magnet_link
                         break
         if not magnet:
-            self.signal.errorSignal.emit("Torrent not found from judas or ember or subsplease!")
+            self.signal.listSignal.emit([self.id,list])
             return False
+
         self.download_from_magnet(magnet)
         self.episodes_to_download = []
         self.episodes_downloading.append(('full', magnet))
@@ -180,6 +182,9 @@ class Anime:
 
 
     def receiveData(self, data):
+        print(data)
+        if not data:
+            return
         magnet= data[1]
         self.download_from_magnet(magnet)
         self.episodes_to_download = []
