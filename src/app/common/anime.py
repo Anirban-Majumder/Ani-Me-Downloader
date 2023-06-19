@@ -11,7 +11,7 @@ class SignalEmitter(QObject):
 
 
 class Anime:
-    def __init__(self, id=0, name='', airing=False, next_eta=0, total_episodes=1,last_aired_episode=1,
+    def __init__(self, id=0, name='', airing=False, download_full=True, next_eta=0, total_episodes=1,last_aired_episode=1,
                  format='', output_dir='', img='', watch_url="", season=1,
                  episodes_to_download=[], episodes_downloading=[],episodes_downloaded=[]):
         self.id = id
@@ -19,7 +19,7 @@ class Anime:
         self.airing = airing
         self.next_eta = next_eta
         self.total_episodes = total_episodes
-        self.last_aired_episode = last_aired_episode
+        self.last_aired_episode = last_aired_episode if airing else total_episodes
         self.season = season
         self.format = format
         self.output_dir = output_dir
@@ -28,6 +28,8 @@ class Anime:
         self.episodes_to_download = episodes_to_download
         self.episodes_downloading = episodes_downloading
         self.episodes_downloaded = episodes_downloaded
+        self.download_full = download_full
+        self.result = None
         self.signal = SignalEmitter()
 
     def start(self):
@@ -37,10 +39,13 @@ class Anime:
 
         if self.airing:
             self.check_currently_airring()
-            self.download_episodewise()
-        else:
-            if self.episodes_to_download:
-                self.download_full()
+
+
+        if self.episodes_to_download:
+            if self.download_full:
+                self.download()
+            else:
+                self.download_episodewise()
 
         if self.episodes_downloaded and not self.episodes_to_download and not self.episodes_downloading:
             self.signal.successSignal.emit(f"Downloaded {self.name} completely.")
@@ -49,12 +54,12 @@ class Anime:
 
     def download_episodewise(self):
         not_failed = True
-        list = self.get_torrent_list(self.name)
-        while self.episodes_to_download and self.episodes_to_download[0] <= self.last_aired_episode and not_failed:
-            not_failed = self.download_episode(self.episodes_to_download[0], list)
+        while not_failed and self.episodes_to_download[0] <= self.last_aired_episode :
+            not_failed = self.download_episode(self.episodes_to_download[0])
 
-    def download_episode(self, episode_number, list):
+    def download_episode(self, episode_number):
         magnet = ''
+        list = self.result if self.result else self.get_torrent_list(self.name)
         name = self.name
         self.signal.infoSignal.emit(f"Looking for {name} episode {episode_number}...")
         if not list:
@@ -78,10 +83,12 @@ class Anime:
             return False
         self.download_from_magnet(magnet)
         self.episodes_downloading.append((episode_number, magnet))
-        self.episodes_to_download.pop(0)
+        i=self.episodes_to_download.pop(0)
+        if i == self.total_episodes:
+            return False
         return True
 
-    def download_full(self):
+    def download(self):
         magnet = ''
         season = f'(Season {self.season})'
         name = self.name
@@ -131,6 +138,7 @@ class Anime:
 
     def check_currently_airring(self) -> None:
 
+        self.download_full = False
         current_time = int(time.time())
         if  self.next_eta > current_time:
             time_difference = self.next_eta - current_time
@@ -180,7 +188,6 @@ class Anime:
                 self.signal.errorSignal.emit(f"Either the anime is not available or the name is wrong...")
         return list
 
-
     def receiveData(self, data):
         print(data)
         if not data:
@@ -196,6 +203,7 @@ class Anime:
             'name': self.name,
             'season': self.season,
             'airing': self.airing,
+            'download_full': self.download_full,
             'next_eta': self.next_eta,
             'format': self.format,
             'last_aired_episode': self.last_aired_episode,
