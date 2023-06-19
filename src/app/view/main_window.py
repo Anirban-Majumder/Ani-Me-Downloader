@@ -1,5 +1,5 @@
 # coding: utf-8
-import os, sys, requests, json, shutil, time
+import json, shutil, time
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, pyqtSignal, QThread, QEventLoop
 from PyQt5.QtWidgets import QApplication, QHBoxLayout, QWidget
@@ -18,7 +18,7 @@ from ..common.anime import Anime, constants
 from ..components.frameless_window import FramelessWindow
 from ..components.stackedwidget import StackedWidget
 from ..common.style_sheet import StyleSheet
-from ..common.utils import get_anime_detail, pingUrl, anime_file
+from ..common.utils import get_anime_detail, anime_file, check_network
 from ..common.proxy_utils import get_proxies, check_proxies
 
 
@@ -33,14 +33,6 @@ class WorkerThread(QThread):
         super().__init__()
         self.mainwindow = mainwindow
         self.wait_for_res = False
-
-    def check_network(self,url):
-        try:
-            res=requests.get(url)
-            res.raise_for_status()
-            return True
-        except Exception as e:
-            pass
 
     def load_anime_file(self):
         try:
@@ -103,10 +95,10 @@ class WorkerThread(QThread):
         self.wait_for_res = True
 
     def run(self):
-        if not self.check_network(pingUrl):
+        if not check_network():
             self.senderror("There is something wrong with your Internet connection")
             return
-        if not self.check_network(constants.qbit_url):
+        if not check_network(constants.qbit_url):
             self.senderror("There is something wrong with your qBittorrent")
             return
 
@@ -202,10 +194,10 @@ class MainWindow(FramelessWindow):
         )
 
     def initWindow(self):
-        self.resize(900, 680)
+        self.resize(900, 700)
         self.setMinimumWidth(600)
         self.setWindowIcon(QIcon('app/resource/logo.png'))
-        self.setWindowTitle('Ani-Me-Downloader')
+        self.setWindowTitle('  Ani-Me  Downloader  ')
         self.titleBar.setAttribute(Qt.WA_StyledBackground)
 
         desktop = QApplication.desktop().availableGeometry()

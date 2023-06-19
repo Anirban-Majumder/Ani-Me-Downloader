@@ -30,14 +30,11 @@ QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 app = QApplication(sys.argv)
 app.setAttribute(Qt.AA_DontCreateNativeWidgetSiblings)
 
-# set custom font
-#QFontDatabase.addApplicationFont("app/resource/Diphylleia.ttf")
+# load fonts
 QFontDatabase.addApplicationFont("app/resource/Yellowtail.ttf")
-#font = QFont("Yellowtail")
-#font = QFont("Diphylleia")
-QFontDatabase.addApplicationFont("app/resource/Aldrich.ttf")
-font = QFont("Aldrich")
-app.setFont(font)
+#QFontDatabase.addApplicationFont("app/resource/Aldrich.ttf")
+#font = QFont("Aldrich")
+#app.setFont(font)
 
 # create main window
 w = MainWindow()

@@ -1,14 +1,14 @@
 import os
 from PyQt5.QtGui import QColor
+from app.common.utils import check_network
 from app.common.proxy_utils import *
 
 def setup(cfg):
-    try:
-        res=requests.get("https://www.google.com")
-        res.raise_for_status()
-    except Exception as e:
-        print("\nFirst time setup failed! Please check your network connection and try again.")
+
+    if not check_network():
+        print("Please check your network connection and try again.")
         exit()
+
     print("\nWorking on first time setup...")
 
     anime_file = os.path.join(os.path.dirname(__file__), "data", "anime_file.json")

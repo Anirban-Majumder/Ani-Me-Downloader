@@ -10,8 +10,7 @@ QScrollArea {
 
 QLabel#title {
     font-size: 66px;
-    font-weight: bold;
-    color: #ffffff;
+    color: white;
     qproperty-alignment: AlignCenter;
     font-family: "YellowTail";
 }

@@ -23,7 +23,7 @@ Widget > QLabel {
 
 CustomTitleBar>QLabel#titleLabel {
     background: transparent;
-    font: 13px 'Segoe UI';
+    font: 24px "YellowTail";
     padding: 0 4px
 }
 
