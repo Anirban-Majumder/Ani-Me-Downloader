@@ -134,7 +134,6 @@ class SettingInterface(ScrollArea):
         self.personalGroup.addSettingCard(self.themeCard)
         self.personalGroup.addSettingCard(self.themeColorCard)
         self.personalGroup.addSettingCard(self.zoomCard)
-
         self.updateSoftwareGroup.addSettingCard(self.updateOnStartUpCard)
 
 

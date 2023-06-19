@@ -2,7 +2,7 @@
 import concurrent.futures
 from threading import Event
 from urllib.parse import parse_qs, urlparse
-import os, json, random
+import os, json, random, time
 import socks, socket, requests
 from bs4 import BeautifulSoup
 from .constants import Constants as constants
@@ -146,3 +146,23 @@ def get_anime_detail(r):
             "output_dir": output_dir, "episodes_to_download": episodes_to_download,
             "watch_url": watch_url, "id": r["id"], "season": season}
     return info
+
+
+def get_time_diffrence(req_time):
+
+    current_time = int(time.time())
+    time_difference = req_time - current_time
+    days = time_difference // (24 * 3600)
+    time_difference = time_difference % (24 * 3600)
+    hours = time_difference // 3600
+    time_difference %= 3600
+    minutes = time_difference // 60
+
+    return days, hours, minutes
+
+def check_network(url="https://google.com"):
+    try:
+        requests.get(url, timeout=5)
+        return True
+    except:
+        return False

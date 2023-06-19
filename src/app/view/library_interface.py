@@ -9,7 +9,7 @@ from qfluentwidgets import (FluentIcon, FlowLayout, PushButton,
 from .base_interface import BaseInterface, ScrollArea
 
 from ..common.style_sheet import StyleSheet
-from ..common.utils import get_img
+from ..common.utils import get_img, get_time_diffrence
 from ..common.config import cfg
 
 class ImageLabel(QLabel):
@@ -67,39 +67,32 @@ class ImageLabel(QLabel):
         painter.drawText(total_episodes_rect, Qt.AlignCenter, total_episodes_text)
 
     def enterEvent(self, event):
-        style = """
-            QLabel {
-                color: white;
-                qproperty-alignment: 'AlignCenter';
-                border-radius: 20px;
-            }
-        """
-        style2=f"background-color: {cfg.themeColor.value.name()};"
+
         delete_button = PrimaryToolButton(FluentIcon.DELETE)
         delete_button.clicked.connect(self.on_delete_button_clicked)
+        self.layout.addWidget(delete_button, alignment=Qt.AlignTop | Qt.AlignRight)
+
         if self.anime['airing']:
-            current_time = int(time.time())
-            time_difference = self.anime['next_eta'] - current_time
-            days = time_difference // (24 * 3600)
-            time_difference = time_difference % (24 * 3600)
-            hours = time_difference // 3600
-            time_difference %= 3600
-            minutes = time_difference // 60
+            days, hours, minutes = get_time_diffrence(self.anime["next_eta"])
             next_air= QLabel(f"Next Airing episode: {self.anime['last_aired_episode']+1}")
             time_left = QLabel(f"Time Left: {days} days {hours} hrs" if days else f"Time Left: {hours} hrs {minutes} mins")
+        else:
+            if len(self.anime['episodes_downloaded']) == self.anime['total_episodes']:
+                status = QLabel("Completely Downloaded")
+            else:
+                status = QLabel(f"{len(self.anime['episodes_downloaded'])} out of {self.anime['total_episodes']} episodes done")
+
         ep_downloaded = QLabel(f"Episodes Downloaded: {len(self.anime['episodes_downloaded'])}")
         total_ep = QLabel(f"Total Episodes: {self.anime['total_episodes']}")
 
-        self.layout.addWidget(delete_button, alignment=Qt.AlignTop | Qt.AlignRight)
-        labels=[next_air,time_left,ep_downloaded,total_ep] if self.anime['airing'] else [ep_downloaded,total_ep]
+        labels=[next_air,time_left,ep_downloaded,total_ep] if self.anime['airing'] else [ep_downloaded,total_ep, status]
         for label in labels:
             label.setMinimumHeight(30)
             label.setMaximumHeight(30)
-            label.setStyleSheet(style)
+            label.setObjectName("animeInfo")
             self.layout.addWidget(label, alignment=Qt.AlignTop)
 
-        self.layout.setSpacing(5)
-        self.setStyleSheet(style2)
+        self.setStyleSheet(f"background-color: {cfg.themeColor.value.name()};")
 
 
     def leaveEvent(self, event):
@@ -131,6 +124,8 @@ class LibraryInterface(BaseInterface):
         self.vBoxLayout.addWidget(scroll_area)
         grid_widget = QFrame()
         self.grid_layout = FlowLayout(self, needAni=True)
+        self.grid_layout._verticalSpacing = 0
+        self.grid_layout._horizontalSpacing = 0
         grid_widget.setLayout(self.grid_layout)
         scroll_area.setWidget(grid_widget)
         scroll_area.setWidgetResizable(True)
@@ -165,7 +160,7 @@ class LibraryInterface(BaseInterface):
             cell_widget = QWidget()
             cell_layout = QVBoxLayout()
             cell_widget.setLayout(cell_layout)
-            cell_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+            cell_widget.setObjectName('animeBox')
             self.grid_layout.addWidget(cell_widget)
 
             # Create a label for the image
@@ -179,8 +174,8 @@ class LibraryInterface(BaseInterface):
             self.load_img(url, image_label)
 
             # Create a label for the title
-            name = anime['name'] if len(anime['name']) <= 28 else anime['name'][:28] + '...'
-            
+            name = anime['name'] if len(anime['name']) <= 44 else anime['name'][:44] + '...'
+
             title_label = QLabel(name)
             title_label.setObjectName('animeTitle')
             title_label.setAlignment(Qt.AlignCenter)
@@ -192,17 +187,15 @@ class LibraryInterface(BaseInterface):
             cell_layout.addLayout(button_layout)
 
             # Create a button for watching online
-            font = QFont()
-            font.setPointSize(8)
             watch_online_button = PushButton('Watch Online')
-            watch_online_button.setFont(font)
-            watch_online_button.clicked.connect(lambda checked, url=anime['watch_url']: self.on_watch_online_button_clicked(url))
+            watch_online_button.setObjectName('button')
+            watch_online_button.clicked.connect(self.on_watch_online_button_clicked(anime['watch_url']))
             button_layout.addWidget(watch_online_button)
 
             # Create a button for watching locally
             watch_local_button = PushButton('Watch Local')
-            watch_local_button.setFont(font)
-            watch_local_button.clicked.connect(lambda checked, path=anime['output_dir']: self.on_watch_local_button_clicked(path))
+            watch_local_button.setObjectName('button')
+            watch_local_button.clicked.connect(self.on_watch_local_button_clicked(anime['output_dir']))
             button_layout.addWidget(watch_local_button)
 
     def load_img(self, url, label):
@@ -211,10 +204,10 @@ class LibraryInterface(BaseInterface):
         label.setPixmap(scaled_pixmap)
 
     def on_watch_online_button_clicked(self, url):
-        QDesktopServices.openUrl(QUrl(url))
+        return lambda: QDesktopServices.openUrl(QUrl(url))
 
     def on_watch_local_button_clicked(self, path):
-        QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+        return lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(path))
 
     def add_anime(self, anime):
         self.anime_data.insert(0, anime)

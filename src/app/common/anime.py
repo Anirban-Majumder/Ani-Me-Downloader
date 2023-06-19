@@ -11,7 +11,7 @@ class SignalEmitter(QObject):
 
 
 class Anime:
-    def __init__(self, id=0, name='', airing=False, next_eta=None, total_episodes=1,last_aired_episode=1,
+    def __init__(self, id=0, name='', airing=False, next_eta=0, total_episodes=1,last_aired_episode=1,
                  format='', output_dir='', img='', watch_url="", season=1,
                  episodes_to_download=[], episodes_downloading=[],episodes_downloaded=[]):
         self.id = id
@@ -156,7 +156,7 @@ class Anime:
                 self.signal.infoSignal.emit(f"{self.name} has finished airing!")
                 self.last_aired_episode = self.total_episodes
                 self.airing = False
-                self.next_eta = None
+                self.next_eta = 0
             else:
                 self.next_eta = data['data']['Media']['nextAiringEpisode']['airingAt']
                 self.last_aired_episode = data['data']['Media']['nextAiringEpisode']['episode'] - 1

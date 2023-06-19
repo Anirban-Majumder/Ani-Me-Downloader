@@ -14,14 +14,34 @@ QFrame {
 }
 
 QLabel#title {
-    font-size: 33px;
-    font-weight: bold;
-    font-family: "YellowTail";
+    font-size: 66px;
     qproperty-alignment: AlignCenter;
+    font-family: "YellowTail";
+}
+
+QWidget#animeBox {
+    background-color: transparent;
+    min-width: 196px;
+    max-width: 196px;
 }
 
 QLabel#animeTitle {
-    font-size: 10px;
-    font-weight: bold;
+    font-size: 12x;
+    font-weight: 700;
+    qproperty-wordWrap: true;
     qproperty-alignment: AlignCenter;
+    min-height: 24px;
+    min-height: 24px;
+}
+
+QLabel#animeInfo {
+    font-size: 10px;
+    font-weight: 500;
+    qproperty-alignment: AlignCenter;
+    border-radius: 8px;
+}
+
+PushButton#button {
+    font-size: 10px;
+    font-weight: 500;
 }
