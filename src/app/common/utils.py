@@ -77,7 +77,7 @@ def get_nyaa_search_result(name):
             magnet_link = r.find('a', {'href': lambda x: x.startswith('magnet')})['href']
             size= r.find('td', {'class': 'text-center'}).find_next_sibling('td').text
             seed= r.find('td', {'class': 'text-center'}).find_next_sibling('td').find_next_sibling('td').find_next_sibling('td').text
-            print(seed, size, title)
+            #print(seed, size, title)
             torrent.append([title, magnet_link, size])
     except Exception as e:
         print(f"Error parsing nyaa.si: {e}")
