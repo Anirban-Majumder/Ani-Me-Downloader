@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<h2>This project: ANI-me-downloader</h2>
+<h2>This project: Ani-Me Downloader</h2>
 
 <br>
 
