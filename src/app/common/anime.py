@@ -128,7 +128,7 @@ class Anime:
             for episode_number, magnet_link in self.episodes_downloading:
                 magnet_torrent = next((torrent for torrent in torrents if compare_magnet_links(torrent['magnet_uri'], magnet_link)), None)
                 torrent_name = magnet_torrent['name']
-                if magnet_torrent and magnet_torrent['state'] == "stalledUP" or magnet_torrent['state'] == "seeding":
+                if magnet_torrent and (magnet_torrent['progress'] * 100) == 100:
                     self.episodes_downloading.remove([episode_number, magnet_link])
                     self.episodes_downloaded.append(episode_number)
                     self.signal.infoSignal.emit(f"{torrent_name} has finished downloading :)")
