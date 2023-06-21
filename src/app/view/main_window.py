@@ -74,7 +74,7 @@ class WorkerThread(QThread):
                 except Exception as e:
                     self.senderror(f"Sorry, can't delete the folder- {anime.output_dir}")
                 self.animes.remove(anime)
-        self.save_anime_file(self.animes)
+        self.save_anime_file()
 
     def sendinfo(self,info):
         self.sendUpdateinfo.emit(info)
