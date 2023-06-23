@@ -17,7 +17,6 @@ class SearchThread(QThread):
     def run(self):
         from ..common.utils import get_anime_list, check_network
         if not check_network():
-            self.statebox.setState(True)
             title = 'No Internet Connection'
             content = 'Please check your internet connection and try again'
             error_box = MessageBox(title, content, self)
@@ -67,8 +66,6 @@ class SearchInterface(BaseInterface):
 
     def on_search_finished(self, anime_list):
         self.anime_list = anime_list
-        from ..components.customdialog import ListDialog, AnimeDialog
-        from ..common.utils import remove_invalid_chars, get_watch_url, get_season, os, download_path
         self.statebox.setState(True)
         self.clear_line()
 
@@ -78,6 +75,8 @@ class SearchInterface(BaseInterface):
             error_box = MessageBox(title, content, self)
             error_box.exec_()
         else:
+            from ..components.customdialog import ListDialog, AnimeDialog
+            from ..common.utils import remove_invalid_chars, get_watch_url, get_season, os, download_path
             self.message_box = ListDialog('Search Results',"Choose the anime form the list:", self)
             for anime in self.anime_list:
                 item = QListWidgetItem(anime['title']['romaji'])

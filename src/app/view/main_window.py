@@ -2,7 +2,8 @@
 import json, shutil, time
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, pyqtSignal, QThread, QEventLoop
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QWidget
+from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QWidget,
+                             QAction, QMenu, QSystemTrayIcon)
 
 from qfluentwidgets import (NavigationInterface, NavigationItemPosition,
                             InfoBar, InfoBarIcon, InfoBarPosition, qrouter)
@@ -111,7 +112,8 @@ class WorkerThread(QThread):
         self.start_animes()
         self.save_anime_file()
         self.sendinfo("To see more details, please click the 'Library' button")
-        #check_proxies()
+        get_proxies()
+        check_proxies()
 
 
 class MainWindow(FramelessWindow):
@@ -197,9 +199,10 @@ class MainWindow(FramelessWindow):
         )
 
     def initWindow(self):
+        self.logo = QIcon('app/resource/logo.png')
         self.resize(900, 700)
         self.setMinimumWidth(600)
-        self.setWindowIcon(QIcon('app/resource/logo.png'))
+        self.setWindowIcon(self.logo)
         self.setWindowTitle('  Ani-Me  Downloader  ')
         self.titleBar.setAttribute(Qt.WA_StyledBackground)
 
@@ -208,7 +211,32 @@ class MainWindow(FramelessWindow):
         self.move(w//2 - self.width()//2, h//2 - self.height()//2)
 
         StyleSheet.MAIN_WINDOW.apply(self)
+        self.create_tray_icon()
         self.workerThread.start()
+
+    def create_tray_icon(self):
+        show_action = QAction("Show", self)
+        show_action.triggered.connect(self.showNormal)
+        exit_action = QAction("Exit", self)
+        exit_action.triggered.connect(QApplication.quit)
+
+        tray_menu = QMenu(self)
+        tray_menu.addAction(show_action)
+        tray_menu.addAction(exit_action)
+
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(self.logo)
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.show()
+
+    def closeEvent(self, event):
+        self.hide()
+        if cfg.minimizeToTray.value:
+            event.ignore()
+
+        else:
+            self.tray_icon.hide()
+            event.accept()
 
     def switchTo(self, widget, triggerByUser=True):
         self.stackWidget.setCurrentWidget(widget, not triggerByUser)
@@ -265,10 +293,58 @@ class MainWindow(FramelessWindow):
             )
             w.show()
 
-    def showFirst(self):
-        #show disclaimer
-        #show onboarding/into
-        pass
+    def showFirstTime(self):
+        from qfluentwidgets import MessageBox
+        import os
+        user = os.getlogin()
+        title=f"Welcome {user} to Ani-Me Downloader"
+        text="""We're glad you're here. By using this application, you agree to the following terms and conditions:
+
+1. Introduction :
+These Terms of Service govern your use of ANI-me-downloader.\n By accessing or using this application, you agree to be bound by these Terms and all applicable laws and regulations.
+
+2. Purpose
+The core aim of ANI-me-downloader is to co-relate automation and efficiency to extract what is provided to a user on the internet. All content available through the application is hosted by external non-affiliated sources.
+
+3. Content
+All content served through this application is publicly accessible. ANI-me-downloader has no control over the content it serves, and any use of copyrighted content from the providers is at the user's own risk.
+
+4. User Conduct
+You agree to use ANI-me-downloader in a manner that is lawful, respectful, and in accordance with these Terms. You may not use this application in any way that could harm, disable, or impair this application or interfere with any other party's use and enjoyment of the application.
+
+5. Disclaimer
+This project is to be used at the user's own risk, based on their government and laws. Any copyright infringements or DMCA in this project's regards are to be forwarded to the associated site by the associated notifier of any such claims.
+
+6. Limitation of Liability
+In no event shall ANI-me-downloader or its developers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on ANI-me-downloader's application, even if ANI-me-downloader or an authorized representative has been notified orally or in writing of the possibility of such damage.
+
+Thank you for using ANI-me-downloader!
+"""
+        message = MessageBox(title, text, self)
+        if message.exec_():
+            title=f"Hello, {user} here's a quick tour of Ani-Me Downloader"
+            text="""
+You need to have a qbittorrent installed on your system to use this application.
+If you don't have one, you can download it from here: https://www.qbittorrent.org/download.php
+After you are done with the installation, you need to configure the application to use it.
+To do that, go to settings and click on the 'Web UI' tab. Then Click on web user interface checkbox and turn it on.
+After that, Click on Bypass authentication for clients on localhost checkbox and click on apply.
+(Optional) You really should set a username and password for your qbittorrent web ui so that no one else can access it.
+
+Coming back to the tour :|
+You can search for the things to download from the search tab.
+then you can choose the the things from list of things that you searched for.
+After that, you can verify all the info and click on okay to start.
+And Voila! You're done. You can see the progress in the library tab.
+"""
+            message2 = MessageBox(title, text, self)
+            if message2.exec_():
+                cfg.set('firstTime', False)
+                print(cfg.firstTime.value)
+            else:
+                exit()
+        else:
+            exit()
 
     def choose_torrent(self, list):
         from ..components.customdialog import ListDialog

@@ -40,4 +40,7 @@ QFontDatabase.addApplicationFont("app/resource/Yellowtail.ttf")
 w = MainWindow()
 w.show()
 
+#if not cfg.firstTime.value:
+#    w.showFirstTime()
+
 app.exec_()
