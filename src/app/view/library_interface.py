@@ -55,7 +55,11 @@ class ImageLabel(QLabel):
             painter.drawText(current_episode_rect, Qt.AlignCenter, current_episode_text)
 
         # Draw the number of downloaded episodes
-        downloaded_episodes_text = f"D{len(self.anime['episodes_downloaded'])}"
+        if self.anime['episodes_downloaded'] and self.anime['episodes_downloaded'][0] == "full":
+            ep_dn = self.anime['total_episodes']
+        else:
+            ep_dn = len(self.anime['episodes_downloaded'])
+        downloaded_episodes_text = f"D{ep_dn}"
         downloaded_episodes_rect = QRect(self.width()-50, self.height() - bottom_rect_height , 25, bottom_rect_height)
         painter.fillRect(downloaded_episodes_rect, QColor('blue'))
         painter.drawText(downloaded_episodes_rect, Qt.AlignCenter, downloaded_episodes_text)
@@ -77,12 +81,16 @@ class ImageLabel(QLabel):
             next_air= QLabel(f"Next Airing episode: {self.anime['last_aired_episode']+1}")
             time_left = QLabel(f"Time Left: {days} days {hours} hrs" if days else f"Time Left: {hours} hrs {minutes} mins")
         else:
-            if len(self.anime['episodes_downloaded']) == self.anime['total_episodes']:
+            if len(self.anime['episodes_downloaded']) == self.anime['total_episodes'] or (self.anime['episodes_downloaded'] and self.anime['episodes_downloaded'][0] == "full"):
                 status = QLabel("Completely Downloaded")
             else:
                 status = QLabel(f"{len(self.anime['episodes_downloaded'])} out of {self.anime['total_episodes']} episodes done")
 
-        ep_downloaded = QLabel(f"Episodes Downloaded: {len(self.anime['episodes_downloaded'])}")
+        if self.anime['episodes_downloaded'] and self.anime['episodes_downloaded'][0] == "full":
+            ep_dn = self.anime['total_episodes']
+        else:
+            ep_dn = len(self.anime['episodes_downloaded'])
+        ep_downloaded = QLabel(f"Episodes Downloaded: {ep_dn}")
         total_ep = QLabel(f"Total Episodes: {self.anime['total_episodes']}")
 
         labels=[next_air,time_left,ep_downloaded,total_ep] if self.anime['airing'] else [ep_downloaded,total_ep, status]

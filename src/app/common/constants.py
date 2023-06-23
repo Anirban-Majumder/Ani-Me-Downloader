@@ -31,6 +31,7 @@ class Constants:
           episodes
           nextAiringEpisode {
             episode
+            airingAt
         }
           coverImage {
             extraLarge

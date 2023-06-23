@@ -89,31 +89,32 @@ class SearchInterface(BaseInterface):
                 season = get_season(watch_url)
                 selected_anime["season"] = season
                 infobox=AnimeDialog(selected_anime,self)
-                infobox.contentLabel.setText("Make sure this info is correct and make corrections as necessary"+" "*40)
+                infobox.contentLabel.setText("Make sure this info is correct and make corrections as necessary")
                 if infobox.exec_():
-                    selected_anime['title']['romaji'] = infobox.title_label.text()
-                    selected_anime['episodes'] = infobox.episodes.value()
+                    name = infobox.title_label.text()
+                    total_episodes = infobox.episodes.value()
+                    season = infobox.season.value()
+                    from_ep = infobox.from_download.value()
+                    to_ep = infobox.to_download.value()
+                    download_type = True if infobox.download_type.currentText() == "Full" else False
                     selected_anime['status'] = infobox.status_combobox.currentText()
-                    selected_anime['season'] = infobox.season.value()
-                    if selected_anime['status'] == 'RELEASING':
-                        selected_anime['nextAiringEpisode'] = infobox.next_airing_episode.value()
-                    else:
-                        selected_anime['nextAiringEpisode'] = None
-                    selected_anime['from'] = infobox.from_download.value()
-                    selected_anime['to'] = infobox.to_download.value()
-
                     airing = selected_anime["status"] == 'RELEASING'
-                    total_episodes = 24 if not selected_anime["episodes"] else selected_anime["episodes"]
+                    if airing:
+                        last_aired_episode = infobox.next_airing_episode.value()
+                        last_aired_episode-=1
+                    else:
+                        last_aired_episode = total_episodes
+                    next_eta = selected_anime['nextAiringEpisode']['airingAt'] if selected_anime['nextAiringEpisode'] else 0
                     output_dir = os.path.join(download_path, remove_invalid_chars(name))
                     if not os.path.exists(output_dir):
-                        os.makedirs(output_dir)
-                    episodes_to_download = list(range(selected_anime["from"], selected_anime["to"]+ 1))
-                    info = {"name": name, "format": selected_anime["format"], "airing": airing,
-                    "total_episodes": total_episodes, "img": selected_anime["coverImage"]["extraLarge"],
-                    "output_dir": output_dir, "episodes_to_download": episodes_to_download,
-                    "watch_url": watch_url, "id": selected_anime["id"], "season": season}
+                        os.makedirs(output_dir, exist_ok=True)
+                    episodes_to_download = list(range(from_ep, to_ep+ 1))
+                    result = {"name": name, "format": selected_anime["format"], "airing": airing, "next_eta": next_eta,
+                    "total_episodes": total_episodes, "img": selected_anime["coverImage"]["extraLarge"], "last_aired_episode": last_aired_episode,
+                    "output_dir": output_dir, "episodes_to_download": episodes_to_download, "season": season,
+                    "watch_url": watch_url, "id": selected_anime["id"], "download_full": download_type}
 
-                    self.addSignal.emit(info)
+                    self.addSignal.emit(result)
 
 
     def clear_line(self):

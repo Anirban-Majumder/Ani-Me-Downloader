@@ -53,7 +53,6 @@ class WorkerThread(QThread):
             anime.signal.successSignal.connect(self.sendsuccess)
             anime.signal.listSignal.connect(self.sendList)
             anime.start()
-            time.sleep(3)
 
     def save_anime_file(self):
         if self.animes:
@@ -90,6 +89,8 @@ class WorkerThread(QThread):
         self.sendListinfo.emit(list)
 
     def onChoice(self, list):
+        if not list:
+            return
         for anime in self.animes:
             if anime.id == list[0]:
                 choice = list[1]
@@ -112,7 +113,7 @@ class WorkerThread(QThread):
         self.start_animes()
         self.save_anime_file()
         self.sendinfo("To see more details, please click the 'Library' button")
-        get_proxies()
+        #get_proxies()
         check_proxies()
 
 
@@ -263,10 +264,9 @@ class MainWindow(FramelessWindow):
         if  cfg.showNotification.value:
             w = InfoBar(
                 icon=InfoBarIcon.INFORMATION,
-                position=InfoBarPosition.BOTTOM_RIGHT,
                 title='Info',
                 content=info,
-                duration=3000,
+                duration=6000,
                 parent=self
             )
             w.show()
@@ -276,7 +276,7 @@ class MainWindow(FramelessWindow):
             icon=InfoBarIcon.ERROR,
             title='Error',
             content=error,
-            duration=5000,
+            duration=6000,
             parent=self
         )
         w.show()
@@ -285,10 +285,9 @@ class MainWindow(FramelessWindow):
         if  cfg.showNotification.value:
             w = InfoBar(
                 icon=InfoBarIcon.SUCCESS,
-                position=InfoBarPosition.BOTTOM_RIGHT,
                 title='Success',
                 content=success,
-                duration=3000,
+                duration=6000,
                 parent=self
             )
             w.show()

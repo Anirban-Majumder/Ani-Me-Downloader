@@ -1,6 +1,6 @@
 # coding:utf-8
 import requests, json, time
-from .utils import constants, get_nyaa_search_result, compare_magnet_links
+from .utils import constants, get_nyaa_search_result, compare_magnet_links, get_time_diffrence
 from PyQt5.QtCore import pyqtSignal, QObject
 
 class SignalEmitter(QObject):
@@ -33,7 +33,7 @@ class Anime:
         self.signal = SignalEmitter()
 
     def start(self):
-        self.signal.infoSignal.emit(f"Looking into {self.name}")
+        print(f"Looking into {self.name}")
         if self.episodes_downloading:
             self.check_downloading()
 
@@ -48,9 +48,9 @@ class Anime:
                 self.download_episodewise()
 
         if self.episodes_downloaded and not self.episodes_to_download and not self.episodes_downloading:
-            self.signal.successSignal.emit(f"Downloaded {self.name} completely.")
+            print(f"Downloaded {self.name} completely.")
         elif self.airing and self.episodes_downloaded:
-            self.signal.successSignal.emit(f"Downloaded {self.name} till episode {len(self.episodes_downloaded)}.")
+            print(f"Downloaded {self.name} till episode {len(self.episodes_downloaded)}.")
 
     def download_episodewise(self):
         not_failed = True
@@ -81,7 +81,7 @@ class Anime:
         if not magnet:
             self.signal.errorSignal.emit("Torrent not found from subsplease or ember!")
             return False
-        self.download_from_magnet(magnet)
+        self.download_from_magnet(magnet, title)
         self.episodes_downloading.append((episode_number, magnet))
         i=self.episodes_to_download.pop(0)
         if i == self.total_episodes:
@@ -92,7 +92,7 @@ class Anime:
         magnet = ''
         season = f'(Season {self.season})'
         name = self.name
-        self.signal.infoSignal.emit(f"Looking for {name}...")
+        self.signal.infoSignal.emit(f"Looking for {name} {self.season}...")
         list =  self.get_torrent_list(name)
         if not list:
             self.signal.errorSignal.emit("No torrent found!")
@@ -112,15 +112,15 @@ class Anime:
             self.signal.listSignal.emit([self.id,list])
             return False
 
-        self.download_from_magnet(magnet)
+        self.download_from_magnet(magnet, title)
         self.episodes_to_download = []
         self.episodes_downloading.append(('full', magnet))
         return True
 
-    def download_from_magnet(self, magnet_link) -> None:
+    def download_from_magnet(self, magnet_link, name) -> None:
         download_data = {'urls': magnet_link, 'savepath': self.output_dir}
         requests.post(f"{constants.qbit_url}/api/v2/torrents/add", data=download_data)
-        self.signal.successSignal.emit("Download started")
+        self.signal.successSignal.emit(f"Download started {name}")
 
     def check_downloading(self):
         torrents = requests.get(f"{constants.qbit_url}/api/v2/torrents/info").json()
@@ -131,23 +131,17 @@ class Anime:
                 if magnet_torrent and (magnet_torrent['progress'] * 100) == 100:
                     self.episodes_downloading.remove([episode_number, magnet_link])
                     self.episodes_downloaded.append(episode_number)
-                    self.signal.infoSignal.emit(f"{torrent_name} has finished downloading :)")
+                    print(f"{torrent_name} has finished downloading :)")
                     requests.post(f"{constants.qbit_url}/api/v2/torrents/pause", data={'hashes': magnet_torrent['hash']})
                 else:
-                    self.signal.infoSignal.emit(f"{torrent_name} is \n{(magnet_torrent['progress'] * 100):.2f}% done & has {(magnet_torrent['eta']/60):.2f} mins left !!")
+                    print(f"{torrent_name} is \n{(magnet_torrent['progress'] * 100):.2f}% done & has {(magnet_torrent['eta']/60):.2f} mins left !!")
 
     def check_currently_airring(self) -> None:
 
-        self.download_full = False
         current_time = int(time.time())
         if  self.next_eta > current_time:
-            time_difference = self.next_eta - current_time
-            days = time_difference // (24 * 3600)
-            time_difference = time_difference % (24 * 3600)
-            hours = time_difference // 3600
-            time_difference %= 3600
-            minutes = time_difference // 60
-            self.signal.infoSignal.emit(f"Next episode airing in about {days} days {hours} hrs {minutes} mins")
+            days, hours, minutes = get_time_diffrence(self.next_eta)
+            print(f"Next episode airing in about {days} days {hours} hrs {minutes} mins")
             return
 
         query = constants.airring_query
@@ -161,16 +155,17 @@ class Anime:
         response = requests.post(url, json={'query': query, 'variables': variables})
         data = json.loads(response.text)
 
-        if self.airing:
-            if data['data']['Media']['nextAiringEpisode'] == None:
-                self.signal.infoSignal.emit(f"{self.name} has finished airing!")
-                self.last_aired_episode = self.total_episodes
-                self.airing = False
-                self.next_eta = 0
-            else:
-                self.next_eta = data['data']['Media']['nextAiringEpisode']['airingAt']
-                self.last_aired_episode = data['data']['Media']['nextAiringEpisode']['episode'] - 1
-                self.signal.infoSignal.emit(f"{self.name} episode {self.last_aired_episode} is airing")
+
+        if data['data']['Media']['nextAiringEpisode'] == None:
+            print(f"{self.name} has finished airing!")
+            self.signal.infoSignal.emit(f"{self.name} has finished airing!")
+            self.last_aired_episode = self.total_episodes
+            self.airing = False
+            self.next_eta = 0
+        else:
+            self.next_eta = data['data']['Media']['nextAiringEpisode']['airingAt']
+            self.last_aired_episode = data['data']['Media']['nextAiringEpisode']['episode'] - 1
+            print(f"{self.name} episode {self.last_aired_episode} is airing")
 
     def get_torrent_list(self,name):
         list = get_nyaa_search_result(name)
@@ -193,7 +188,8 @@ class Anime:
         if not data:
             return
         magnet= data[1]
-        self.download_from_magnet(magnet)
+        name=data[0]
+        self.download_from_magnet(magnet, name)
         self.episodes_to_download = []
         self.episodes_downloading.append(('full', magnet))
 
