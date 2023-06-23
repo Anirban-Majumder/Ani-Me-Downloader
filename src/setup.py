@@ -45,4 +45,4 @@ trigger_time = '07:00'
 arguments = 'check'
 username = os.getlogin()
 
-create_scheduled_task(task_name, script_path, trigger_time, arguments,username)
+#create_scheduled_task(task_name, script_path, trigger_time, arguments,username)

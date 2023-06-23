@@ -66,12 +66,17 @@ class AnimeDialog(MaskDialogBase, Ui_MessageBox):
         self.message_box_layout = QHBoxLayout()
         self.vBoxLayout.insertLayout(1, self.message_box_layout)
 
+        img = anime['coverImage']['extraLarge']
+        name = anime['title']['romaji']
+        airing = anime['status'] == 'RELEASING'
+        total_ep = anime['episodes'] if anime['episodes'] else 13
+        airing_ep = anime['nextAiringEpisode']['episode'] if airing and anime['nextAiringEpisode'] else total_ep
+
         # Show the cover image on the left side of the dialog
         cover_image_label = QLabel()
         self.message_box_layout.addWidget(cover_image_label, Qt.AlignLeft)
-        url = anime['coverImage']['extraLarge']
         self.img_size = (164, 240)
-        self.load_img(url, cover_image_label)
+        self.load_img(img, cover_image_label)
 
         # Create a form layout for the anime info on the right side of the dialog
         form_layout = QFormLayout()
@@ -79,7 +84,7 @@ class AnimeDialog(MaskDialogBase, Ui_MessageBox):
 
         # Add the anime title (not editable)
         self.title_label = LineEdit(self)
-        self.title_label.setText(anime['title']['romaji'])
+        self.title_label.setText(name)
         form_layout.addRow('Title:', self.title_label)
         form_layout.setContentsMargins(30,30,30,30)
         form_layout.setSpacing(8)
@@ -90,31 +95,44 @@ class AnimeDialog(MaskDialogBase, Ui_MessageBox):
         form_layout.addRow('Season:', self.season)
 
         # Add a spin box for the next airing episode (only enabled if status is RELEASING)
-        if anime["status"] == 'RELEASING':
+        if airing:
             self.next_airing_episode = SpinBox(self)
-            self.next_airing_episode.setEnabled(anime['status'] == 'RELEASING')
-            self.next_airing_episode.setValue(anime['nextAiringEpisode']['episode'])
+            self.next_airing_episode.setEnabled(airing)
+            self.next_airing_episode.setValue(airing_ep)
             form_layout.addRow('Next Airing Episode:', self.next_airing_episode)
 
         # Add a spin box for the number of episodes
         self.episodes = SpinBox(self)
-        self.episodes.setValue(anime['episodes'])
+        self.episodes.setValue(total_ep)
         form_layout.addRow('Total Episodes:', self.episodes)
 
         # Add a combo box for the status
         self.status_combobox = ComboBox(self)
         self.status_combobox.addItems(['FINISHED', 'RELEASING', 'NOT_YET_RELEASED'])
         self.status_combobox.setCurrentText(anime['status'])
-        self.status_combobox.currentTextChanged.connect(lambda text: self.next_airing_episode.setEnabled(text == 'RELEASING'))
+        self.status_combobox.setEnabled(False)
         form_layout.addRow('Status:', self.status_combobox)
+
+        self.download_type = ComboBox(self)
+        self.download_type.addItems(['Full', 'Episodewise'])
+        self.download_type.setCurrentText('Episodewise' if airing else 'Full')
+        form_layout.addRow('Download Type:              ', self.download_type)
 
         self.from_download = SpinBox(self)
         self.from_download.setValue(1)
-        form_layout.addRow('Download from episode:', self.from_download)
 
         self.to_download = SpinBox(self)
-        self.to_download.setValue(anime['episodes'])
-        form_layout.addRow('Download to episode:           ', self.to_download)
+        self.to_download.setValue(total_ep)
+
+        self.from_download_label = QLabel('Download from episode:')
+        self.to_download_label = QLabel('Download to episode:')
+
+        form_layout.addRow(self.from_download_label, self.from_download)
+        form_layout.addRow(self.to_download_label, self.to_download)
+
+        self.update_widgets()
+        self.download_type.currentTextChanged.connect(self.update_widgets)
+
 
 
     def load_img(self,url,label):
@@ -128,3 +146,15 @@ class AnimeDialog(MaskDialogBase, Ui_MessageBox):
               self._adjustText()
 
       return super().eventFilter(obj, e)
+
+    def update_widgets(self):
+        if self.download_type.currentText() == "Full":
+            self.from_download.hide()
+            self.to_download.hide()
+            self.from_download_label.hide()
+            self.to_download_label.hide()
+        else:
+            self.from_download.show()
+            self.to_download.show()
+            self.from_download_label.show()
+            self.to_download_label.show()
