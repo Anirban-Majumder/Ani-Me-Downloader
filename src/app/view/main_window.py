@@ -1,12 +1,12 @@
 # coding: utf-8
-import json, shutil, time
+import json, shutil
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt, pyqtSignal, QThread, QEventLoop
+from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QWidget,
                              QAction, QMenu, QSystemTrayIcon)
 
 from qfluentwidgets import (NavigationInterface, NavigationItemPosition,
-                            InfoBar, InfoBarIcon, InfoBarPosition, qrouter)
+                            InfoBar, InfoBarIcon, qrouter)
 from qfluentwidgets import FluentIcon as FIF
 
 from .title_bar import CustomTitleBar
@@ -19,7 +19,7 @@ from ..common.anime import Anime, constants
 from ..components.frameless_window import FramelessWindow
 from ..components.stackedwidget import StackedWidget
 from ..common.style_sheet import StyleSheet
-from ..common.utils import get_anime_detail, anime_file, check_network
+from ..common.utils import anime_file, check_network
 from ..common.proxy_utils import get_proxies, check_proxies
 
 
@@ -113,7 +113,7 @@ class WorkerThread(QThread):
         self.start_animes()
         self.save_anime_file()
         self.sendinfo("To see more details, please click the 'Library' button")
-        #get_proxies()
+        get_proxies()
         check_proxies()
 
 
@@ -212,8 +212,7 @@ class MainWindow(FramelessWindow):
         self.move(w//2 - self.width()//2, h//2 - self.height()//2)
 
         StyleSheet.MAIN_WINDOW.apply(self)
-        self.create_tray_icon()
-        self.workerThread.start()
+        #self.workerThread.start()
 
     def create_tray_icon(self):
         show_action = QAction("Show", self)
@@ -230,7 +229,7 @@ class MainWindow(FramelessWindow):
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
 
-    def closeEvent(self, event):
+    def tempcloseEvent(self, event):
         self.hide()
         if cfg.minimizeToTray.value:
             event.ignore()
@@ -293,6 +292,7 @@ class MainWindow(FramelessWindow):
             w.show()
 
     def showFirstTime(self):
+        print("First Time")
         from qfluentwidgets import MessageBox
         import os
         user = os.getlogin()
@@ -300,7 +300,7 @@ class MainWindow(FramelessWindow):
         text="""We're glad you're here. By using this application, you agree to the following terms and conditions:
 
 1. Introduction :
-These Terms of Service govern your use of ANI-me-downloader.\n By accessing or using this application, you agree to be bound by these Terms and all applicable laws and regulations.
+These Terms of Service govern your use of ANI-me-downloader. By accessing or using this application, you agree to be bound by these Terms and all applicable laws and regulations.
 
 2. Purpose
 The core aim of ANI-me-downloader is to co-relate automation and efficiency to extract what is provided to a user on the internet. All content available through the application is hosted by external non-affiliated sources.
@@ -320,6 +320,7 @@ In no event shall ANI-me-downloader or its developers be liable for any damages 
 Thank you for using ANI-me-downloader!
 """
         message = MessageBox(title, text, self)
+        print(message.contentLabel.width())
         if message.exec_():
             title=f"Hello, {user} here's a quick tour of Ani-Me Downloader"
             text="""

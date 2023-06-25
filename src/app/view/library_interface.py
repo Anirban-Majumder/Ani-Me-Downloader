@@ -1,11 +1,10 @@
 # coding:utf-8
-import json,time
+import json
 from PyQt5.QtCore import Qt, QRect, QRectF, QUrl, pyqtSignal
-from PyQt5.QtGui import  QPainter, QColor, QPainterPath,  QDesktopServices, QFont,QPalette
+from PyQt5.QtGui import  QPainter, QColor, QPainterPath,  QDesktopServices
 from PyQt5.QtWidgets import (QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame,
-                             QWidget, QVBoxLayout, QLabel, QSizePolicy, QWidget, QFrame)
-from qfluentwidgets import (FluentIcon, FlowLayout, PushButton,
-                            PrimaryToolButton)
+                             QWidget, QVBoxLayout, QLabel, QWidget, QFrame)
+from qfluentwidgets import (FluentIcon, FlowLayout, PushButton,PrimaryToolButton)
 from .base_interface import BaseInterface, ScrollArea
 
 from ..common.style_sheet import StyleSheet
@@ -159,8 +158,8 @@ class LibraryInterface(BaseInterface):
                 widget.deleteLater()
 
         if not self.anime_data:
-            title_label = QLabel("Add Anime from Search to see here")
-            title_label.setObjectName("title")
+            self.title_label = QLabel("Add Anime from Search to see here")
+            self.title_label.setObjectName("title")
             self.vBoxLayout.addWidget(title_label, Qt.AlignCenter)
 
         for anime in self.anime_data:
@@ -218,11 +217,23 @@ class LibraryInterface(BaseInterface):
         return lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(path))
 
     def add_anime(self, anime):
+        if self.title_label:
+            self.title_label.setParent(None)
+            self.title_label.deleteLater()
         self.anime_data.insert(0, anime)
         self.update_grid()
 
-
     def on_delete_signal(self, id):
-        self.anime_data = [anime for anime in self.anime_data if anime['id'] != id]
-        self.update_grid()
-        self.deleteSignal.emit(id)
+        from qfluentwidgets import MessageBox
+        for anime in self.anime_data:
+            if anime['id'] == id:
+                anime_data = anime
+                break
+
+        title = "Confirm Delete"
+        content = f"Are you sure you want to delete {anime_data['name']} from your library? This will also delete all downloaded files."
+        message = MessageBox(title, content, parent=self)
+        if message.exec_():
+            self.anime_data.remove(anime_data)
+            self.update_grid()
+            self.deleteSignal.emit(id)

@@ -1,16 +1,21 @@
-import os
+import os, getpass
 from PyQt5.QtGui import QColor
 from app.common.utils import check_network
 from app.common.proxy_utils import *
 
-def setup(cfg):
 
+def add_to_startup():
+    file_path = os.path.realpath(__file__)
+    USER_NAME = getpass.getuser()
+    bat_path = r'C:\\Users\\%s\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup' % USER_NAME
+    with open(bat_path + '\\' + "start_Anime_Downloader.bat", "w") as bat_file:
+        bat_file.write(r'start "" "%s check"' % file_path)
+
+def setup(cfg):
     if not check_network():
         print("Please check your network connection and try again.")
         exit()
-
     print("\nWorking on first time setup...")
-
     anime_file = os.path.join(os.path.dirname(__file__), "data", "anime_file.json")
     download_folder = os.path.join(os.path.dirname(__file__), "download")
     os.makedirs(download_folder, exist_ok=True)
@@ -23,26 +28,9 @@ def setup(cfg):
     cfg.set(cfg.testProxy, os.path.join(os.path.dirname(__file__), "data", "test_proxy.txt"))
     cfg.set(cfg.themeColor, QColor('#ff0162'))
     cfg.save()
+    add_to_startup()
+    print("Added to startup successfully!")
     get_proxies()
     print("This will take a while, please wait...")
     check_proxies()
     print("First time setup completed successfully!\n")
-
-
-
-
-
-import subprocess
-
-def create_scheduled_task(task_name, script_path, trigger_time, arguments,username):
-    command = f'schtasks /create /tn "{task_name}" /tr "{script_path} {arguments}" /sc onlogon /ru {username}'
-    subprocess.run(command, shell=True)
-
-
-task_name = 'aaaTask'
-script_path = r'C:\\Users\\Anirban\\Desktop\\run.bat'
-trigger_time = '07:00'
-arguments = 'check'
-username = os.getlogin()
-
-#create_scheduled_task(task_name, script_path, trigger_time, arguments,username)

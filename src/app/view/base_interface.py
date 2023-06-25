@@ -1,10 +1,8 @@
 # coding:utf-8
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QWidget, QVBoxLayout)
-
 from qfluentwidgets import ScrollArea
 
-from ..common.style_sheet import StyleSheet
 
 class BaseInterface(ScrollArea):
     """ Base interface """
@@ -23,9 +21,6 @@ class BaseInterface(ScrollArea):
         self.vBoxLayout.setContentsMargins(36, 20, 36, 36)
 
         self.view.setObjectName('view')
-        #StyleSheet.BASE_INTERFACE.apply(self)
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
-
-

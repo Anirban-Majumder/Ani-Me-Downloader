@@ -61,7 +61,7 @@ class Anime:
         magnet = ''
         list = self.result if self.result else self.get_torrent_list(self.name)
         name = self.name
-        self.signal.infoSignal.emit(f"Looking for {name} episode {episode_number}...")
+        self.signal.infoSignal.emit(f"Looking for {name} S-{self.season} ep-{episode_number}...")
         if not list:
             return False
         for title, magnet_link, size in list:
@@ -92,7 +92,10 @@ class Anime:
         magnet = ''
         season = f'(Season {self.season})'
         name = self.name
-        self.signal.infoSignal.emit(f"Looking for {name} {self.season}...")
+        self.signal.infoSignal.emit(f"Looking for {name} Season {self.season}...")
+        if self.airing:
+            self.signal.infoSignal.emit(f"{name} Season {self.season} is still airing...")
+            return False
         list =  self.get_torrent_list(name)
         if not list:
             self.signal.errorSignal.emit("No torrent found!")
@@ -101,11 +104,8 @@ class Anime:
             season = ' '
         for title, magnet_link, size in list:
             if '1080p' in title.lower():
-                if any(keyword in title.lower() for keyword in ['[ember]', '[judas]', '[subsplease]']):
+                if any(keyword in title.lower() for keyword in ['[ember]', '[judas]']):
                     if '[ember]' or '[judas]' and season in title.lower():
-                        magnet = magnet_link
-                        break
-                    elif '[subsplease]' in title.lower() and f'(01-{self.total_episodes})' in title.lower():
                         magnet = magnet_link
                         break
         if not magnet:
