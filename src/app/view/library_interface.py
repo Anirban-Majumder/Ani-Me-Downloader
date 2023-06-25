@@ -145,6 +145,11 @@ class LibraryInterface(BaseInterface):
         with open('data/anime_file.json', 'r') as f:
             self.anime_data = json.load(f)
 
+
+        self.title_label = QLabel("Add Anime from Search to see here")
+        self.title_label.setObjectName("title")
+        if not self.anime_data:
+            self.vBoxLayout.addWidget(self.title_label, Qt.AlignCenter)
         self.img_size = (164, 240)
         self.update_grid()
 
@@ -156,11 +161,6 @@ class LibraryInterface(BaseInterface):
             if widget:
                 widget.setParent(None)
                 widget.deleteLater()
-
-        if not self.anime_data:
-            self.title_label = QLabel("Add Anime from Search to see here")
-            self.title_label.setObjectName("title")
-            self.vBoxLayout.addWidget(title_label, Qt.AlignCenter)
 
         for anime in self.anime_data:
             # Create a vertical layout for each grid cell
