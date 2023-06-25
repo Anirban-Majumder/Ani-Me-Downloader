@@ -69,7 +69,7 @@ If you wish to contribute, you can work on any feature or bugs. After adding you
 
 ### License
 
-Ani-Me-Downloader is licensed under the MIT License. For more information, see the [`LICENSE`](LICENSE) file for details.
+Ani-Me-Downloader is licensed under the GPLv3 License. For more information, see the [`LICENSE`](LICENSE) file for details.
 
 ### Finding the Software
 
