@@ -22,7 +22,7 @@ class Config(QConfig):
 
     # main window
     minimizeToTray = ConfigItem(
-        "MainWindow", "MinimizeToTray", True, BoolValidator())
+        "MainWindow", "MinimizeToTray", False, BoolValidator())
     showNotification = ConfigItem(
         "MainWindow", "ShowNotification", True, BoolValidator())
     dpiScale = OptionsConfigItem(
@@ -39,7 +39,7 @@ class Config(QConfig):
     proxyPath = ConfigItem("Anime", "ProxyPath", "data/proxy.txt")
     testProxy = ConfigItem("Anime", "TestProxy", "data/test_proxy.txt")
     pingUrl = ConfigItem("Anime", "PingUrl", "https://www.google.com")
-    firstTime = ConfigItem("Anime","FirstTime", True)
+    firstTime = ConfigItem("Anime","FirstTime", False)
     maxThread = ConfigItem("Anime", "MaxThread", 6)
 
 

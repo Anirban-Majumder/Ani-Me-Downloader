@@ -3,11 +3,19 @@ import os
 import sys
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFontDatabase, QFont
+from PyQt5.QtGui import QFontDatabase
 from PyQt5.QtWidgets import QApplication
 
 from app.common.config import cfg
 from app.view.main_window import MainWindow
+
+#get custom app id
+try:
+    from ctypes import windll  # Only exists on Windows.
+    myappid = 'anirban.majumder.animedownloader'
+    windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+except ImportError:
+    pass
 
 
 # run on first time setup
@@ -32,15 +40,20 @@ app.setAttribute(Qt.AA_DontCreateNativeWidgetSiblings)
 
 # load fonts
 QFontDatabase.addApplicationFont("app/resource/Yellowtail.ttf")
-#QFontDatabase.addApplicationFont("app/resource/Aldrich.ttf")
-#font = QFont("Aldrich")
-#app.setFont(font)
+
 
 # create main window
 w = MainWindow()
-w.show()
 
-#if not cfg.firstTime.value:
-#    w.showFirstTime()
+# check if the argument is 'check'
+if len(sys.argv) > 1 and sys.argv[1] == 'check':
+    # start the app minimized
+    w.showMinimized()
+else:
+    # start the app normally
+    w.show()
+
+if cfg.firstTime.value:
+    w.showFirstTime()
 
 app.exec_()

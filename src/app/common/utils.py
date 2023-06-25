@@ -14,7 +14,12 @@ anime_file = cfg.animeFile.value
 proxy_file = cfg.proxyPath.value
 max_threads = cfg.maxThread.value
 pingUrl = cfg.pingUrl.value
-
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/115.0',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Accept-Language': 'en-US,en;q=0.5'
+}
 
 
 def compare_magnet_links(link1, link2):
@@ -28,12 +33,6 @@ def compare_magnet_links(link1, link2):
 def requests_get(url):
     print(url)
     stop_event = Event()
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Accept-Language': 'en-US,en;q=0.9'
-    }
     with open(proxy_file, 'r') as f:
         proxies = f.read().splitlines()
     random.shuffle(proxies)
@@ -92,11 +91,12 @@ def remove_invalid_chars(path, replace_with=''):
 
 
 def get_watch_url(title):
-    url = f'https://9anime.pl/filter?keyword={title}'
-    response = requests.get(url, timeout=5)
+    url = f'{constants.nineanime_url}/filter'
+    params = {'keyword': title}
+    response = requests.get(url, params=params, headers=headers, timeout=5)
     soup = BeautifulSoup(response.text, 'html.parser')
     result = soup.select_one('div.ani.items > div > div > div > a')
-    watch_url = 'https://9anime.pl' + result['href']
+    watch_url = constants.nineanime_url + result['href']
     return watch_url
 
 
@@ -132,25 +132,8 @@ def get_img(url):
     return default_pixmap
 
 
-def get_anime_detail(r):
-    name = remove_invalid_chars(r["title"]["romaji"])
-    watch_url = get_watch_url(r["title"]["romaji"])
-    season = get_season(watch_url)
-    airing = r["status"] == 'RELEASING'
-    total_episodes = 24 if not r["episodes"] else r["episodes"]
-    output_dir = os.path.join(download_path, remove_invalid_chars(name))
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    episodes_to_download = list(range(r["from"], r["to"]+ 1))
-    info = {"name": name, "format": r["format"], "airing": airing,
-            "total_episodes": total_episodes, "img": r["coverImage"]["extraLarge"],
-            "output_dir": output_dir, "episodes_to_download": episodes_to_download,
-            "watch_url": watch_url, "id": r["id"], "season": season}
-    return info
-
-
 def get_season(url):
-    response = requests.get(url)
+    response = requests.get(url, headers=headers, timeout=5)
     if response.status_code == 200:
         soup= BeautifulSoup(response.text, 'html.parser')
         try:

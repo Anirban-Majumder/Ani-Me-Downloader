@@ -1,8 +1,6 @@
 # coding:utf-8
 class Constants:
-    inp_err = "#### ENTER THE PROPER NAME OF THE ANIME AND CHOOSE FROM THE LIST ####"
-    net_err = "#### NO INTERNET CONNECTION, PLEASE CONNECT TO INTERNET AND TRY AGAIN ####"
-    line = "-"*50
+    nineanime_url = 'https://9anime.pl'
     api_url = 'https://graphql.anilist.co'
     qbit_url = 'http://localhost:8080'
     proxy_url ='https://api.proxyscrape.com/v2/?request=getproxies&protocol=socks4&timeout=5000&country=all'
