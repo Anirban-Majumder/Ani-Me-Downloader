@@ -4,6 +4,7 @@ from enum import Enum
 from qfluentwidgets import (qconfig, QConfig, ConfigItem, OptionsConfigItem, BoolValidator,
                             OptionsValidator,  EnumSerializer, FolderValidator,)
 
+data_dir = os.path.join(os.path.expanduser("~"), ".Ani-Me-Downloader")
 
 class MvQuality(Enum):
     """ MV quality enumeration class """
@@ -35,13 +36,13 @@ class Config(QConfig):
     # software update
     checkUpdateAtStartUp = ConfigItem("Update", "CheckUpdateAtStartUp", False, BoolValidator())
 
-    animeFile = ConfigItem("Anime", "AnimeFile", "data/anime_file.json")
-    proxyPath = ConfigItem("Anime", "ProxyPath", "data/proxy.txt")
-    testProxy = ConfigItem("Anime", "TestProxy", "data/test_proxy.txt")
+    animeFile = ConfigItem("Anime", "AnimeFile", os.path.join(data_dir, "anime_file.json"))
+    proxyPath = ConfigItem("Anime", "ProxyPath", os.path.join(data_dir, "proxy.txt"))
+    testProxy = ConfigItem("Anime", "TestProxy", os.path.join(data_dir, "test_proxy.txt"))
     pingUrl = ConfigItem("Anime", "PingUrl", "https://www.google.com")
     firstTime = ConfigItem("Anime","FirstTime", False)
     maxThread = ConfigItem("Anime", "MaxThread", 6)
 
 
 cfg = Config()
-qconfig.load(os.path.join("data","config.json"), cfg)
+qconfig.load(os.path.join(data_dir, "config.json"), cfg)

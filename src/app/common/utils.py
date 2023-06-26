@@ -7,19 +7,13 @@ import socks, socket, requests
 from bs4 import BeautifulSoup
 from .constants import Constants as constants
 from PyQt5.QtGui import QPixmap
-from .config import cfg
+from .config import cfg, data_dir
 
 download_path = cfg.downloadFolder.value
 anime_file = cfg.animeFile.value
 proxy_file = cfg.proxyPath.value
 max_threads = cfg.maxThread.value
 pingUrl = cfg.pingUrl.value
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/115.0',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    'Accept-Encoding': 'gzip, deflate, br',
-    'Accept-Language': 'en-US,en;q=0.5'
-}
 
 
 def compare_magnet_links(link1, link2):
@@ -93,10 +87,10 @@ def remove_invalid_chars(path, replace_with=''):
 def get_watch_url(title):
     url = f'{constants.nineanime_url}/filter'
     params = {'keyword': title}
-    response = requests.get(url, params=params, headers=headers, timeout=5)
+    response = requests.get(url, params=params, timeout=5)
     soup = BeautifulSoup(response.text, 'html.parser')
-    result = soup.select_one('div.ani.items > div > div > div > a')
-    watch_url = constants.nineanime_url + result['href']
+    url = soup.find('div', {'class': 'item'}).find('a')['href']
+    watch_url = constants.nineanime_url + url
     return watch_url
 
 
@@ -112,11 +106,13 @@ def get_anime_list(name):
 
 
 def get_img(url):
-    if not os.path.exists("cache"):
-        os.makedirs("cache")
+    cache_dir = os.path.join(data_dir, "cache")
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
     url_split_last_part = url.split("/")[-1]
+    path = os.path.join(cache_dir, url_split_last_part)
     try:
-        pixmap = QPixmap(f"cache/{url_split_last_part}")
+        pixmap = QPixmap(path)
         if not pixmap.isNull():
             return pixmap
         response = requests.get(url)
@@ -124,16 +120,16 @@ def get_img(url):
         pixmap = QPixmap()
         success = pixmap.loadFromData(data)
         if success:
-            pixmap.save(f"cache/{url_split_last_part}")
+            pixmap.save(path)
             return pixmap
     except Exception as e:
         print(f"Error loading image: {e}")
-    default_pixmap = QPixmap("resource/logo.png")
+    default_pixmap = QPixmap(os.path.join("app","resource","logo.png"))
     return default_pixmap
 
 
 def get_season(url):
-    response = requests.get(url, headers=headers, timeout=5)
+    response = requests.get(url, timeout=5)
     if response.status_code == 200:
         soup= BeautifulSoup(response.text, 'html.parser')
         try:
@@ -158,7 +154,7 @@ def get_time_diffrence(req_time):
     return days, hours, minutes
 
 
-def check_network(url="https://google.com"):
+def check_network(url="https://example.com/"):
     try:
         requests.get(url, timeout=5)
         return True

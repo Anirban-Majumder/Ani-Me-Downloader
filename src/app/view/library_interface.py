@@ -142,7 +142,7 @@ class LibraryInterface(BaseInterface):
 
         StyleSheet.LIBRARY_INTERFACE.apply(self)
 
-        with open('data/anime_file.json', 'r') as f:
+        with open(cfg.animeFile.value, 'r') as f:
             self.anime_data = json.load(f)
 
 

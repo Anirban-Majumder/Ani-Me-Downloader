@@ -96,6 +96,7 @@ class Anime:
         if self.airing:
             self.signal.infoSignal.emit(f"{name} Season {self.season} is still airing...")
             return False
+        self.signal.infoSignal.emit("searching")
         list =  self.get_torrent_list(name)
         if not list:
             self.signal.errorSignal.emit("No torrent found!")
