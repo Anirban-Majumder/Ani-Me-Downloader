@@ -6,12 +6,12 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFontDatabase
 from PyQt5.QtWidgets import QApplication
 
-from app.common.config import cfg
+from app.common.config import cfg , data_dir
 from app.view.main_window import MainWindow
 
 #get custom app id
 try:
-    from ctypes import windll  # Only exists on Windows.
+    from ctypes import windll
     myappid = 'anirban.majumder.animedownloader'
     windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 except ImportError:
@@ -19,7 +19,7 @@ except ImportError:
 
 
 # run on first time setup
-if not os.path.exists(os.path.join(os.path.dirname(__file__), "data")):
+if not os.path.exists(data_dir):
     from setup import setup
     setup(cfg)
 

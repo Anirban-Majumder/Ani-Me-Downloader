@@ -212,7 +212,7 @@ class MainWindow(FramelessWindow):
         self.move(w//2 - self.width()//2, h//2 - self.height()//2)
 
         StyleSheet.MAIN_WINDOW.apply(self)
-        #self.workerThread.start()
+        self.workerThread.start()
 
     def create_tray_icon(self):
         show_action = QAction("Show", self)
@@ -260,6 +260,13 @@ class MainWindow(FramelessWindow):
         self.workerThread.remove_anime(id)
 
     def showInfo(self,info):
+        if "searching" in info:
+            from qfluentwidgets import StateToolTip
+            self.torrbox = StateToolTip("Searching","searching for torrents",self)
+            self.torrbox.move(int(self.width()-(self.torrbox.width()+10)), int(self.height()-(self.torrbox.height()+10)))
+            self.torrbox.show()
+            return
+
         if  cfg.showNotification.value:
             w = InfoBar(
                 icon=InfoBarIcon.INFORMATION,
@@ -347,6 +354,8 @@ And Voila! You're done. You can see the progress in the library tab.
             exit()
 
     def choose_torrent(self, list):
+        if self.torrbox:
+            self.torrbox.setState(True)
         from ..components.customdialog import ListDialog
         from PyQt5.QtWidgets import QListWidgetItem
         self.torrent_box = ListDialog('Torrent Results',"Choose the torrent form the list:", self)

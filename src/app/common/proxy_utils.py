@@ -25,7 +25,6 @@ def get_proxies():
     print(f"Fresh Proxies downloaded\nTotal proxies: {len(li)}")
 
 
-
 def check_proxy(proxy):
     try:
         socks.set_default_proxy(socks.SOCKS4, proxy.split(':')[0], int(proxy.split(':')[1]))
@@ -37,18 +36,15 @@ def check_proxy(proxy):
     except:
         return False
 
-def worker(queue):
-    while not queue.empty():
-        proxy = queue.get()
-        if check_proxy(proxy):
-            with open(proxy_file, 'a') as f:
-                f.write(proxy + '\n')
-        queue.task_done()
-
 def check_proxies():
+    working_proxies = []
 
-    with open(proxy_file, 'w') as f:
-        pass
+    def worker(queue):
+        while not queue.empty():
+            proxy = queue.get()
+            if check_proxy(proxy):
+                working_proxies.append(proxy)
+            queue.task_done()
 
     queue = Queue()
     with open(test_proxy_file, 'r') as f:
@@ -65,11 +61,11 @@ def check_proxies():
     queue.join()
     for t in threads:
         t.join()
-    li=[]
-    with open(proxy_file, 'r') as f:
-        for line in f:
-            li.append(line.strip())
+
+    with open(proxy_file, 'w') as f:
+        for proxy in working_proxies:
+            f.write(proxy + '\n')
 
     socks.set_default_proxy()
     socket.socket = socks.socksocket
-    print(f"Proxy check Done\nTotal working proxies: {len(li)}")
+    print(f"Proxy check Done\nTotal working proxies: {len(working_proxies)}")
