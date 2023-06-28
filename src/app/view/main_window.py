@@ -20,7 +20,6 @@ from ..components.frameless_window import FramelessWindow
 from ..components.stackedwidget import StackedWidget
 from ..common.style_sheet import StyleSheet
 from ..common.utils import anime_file, check_network
-from ..common.proxy_utils import get_proxies, check_proxies
 
 
 
@@ -113,6 +112,7 @@ class WorkerThread(QThread):
         self.start_animes()
         self.save_anime_file()
         self.sendinfo("To see more details, please click the 'Library' button")
+        from ..common.proxy_utils import get_proxies, check_proxies
         get_proxies()
         check_proxies()
 
@@ -278,6 +278,11 @@ class MainWindow(FramelessWindow):
             w.show()
 
     def showError(self,error):
+        if "searching" in error:
+            if self.torrbox:
+                self.torrbox.setState(True)
+                return
+
         w = InfoBar(
             icon=InfoBarIcon.ERROR,
             title='Error',
@@ -354,8 +359,6 @@ And Voila! You're done. You can see the progress in the library tab.
             exit()
 
     def choose_torrent(self, list):
-        if self.torrbox:
-            self.torrbox.setState(True)
         from ..components.customdialog import ListDialog
         from PyQt5.QtWidgets import QListWidgetItem
         self.torrent_box = ListDialog('Torrent Results',"Choose the torrent form the list:", self)

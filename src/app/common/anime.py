@@ -59,10 +59,13 @@ class Anime:
 
     def download_episode(self, episode_number):
         magnet = ''
+        self.signal.infoSignal.emit("searching")
         list = self.result if self.result else self.get_torrent_list(self.name)
+        self.signal.errorSignal.emit("searching")
         name = self.name
-        self.signal.infoSignal.emit(f"Looking for {name} S-{self.season} ep-{episode_number}...")
+        self.signal.infoSignal.emit(f"Looking for {name} S-{self.season} ep-{episode_number}")
         if not list:
+            self.signal.errorSignal.emit(f"No torrent found for {name} S-{self.season} ep-{episode_number}")
             return False
         for title, magnet_link, size in list:
             if '1080p' in title.lower():
@@ -98,6 +101,7 @@ class Anime:
             return False
         self.signal.infoSignal.emit("searching")
         list =  self.get_torrent_list(name)
+        self.signal.errorSignal.emit("searching")
         if not list:
             self.signal.errorSignal.emit("No torrent found!")
             return False
