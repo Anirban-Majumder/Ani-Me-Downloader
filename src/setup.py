@@ -1,7 +1,7 @@
 import os , shutil, getpass
 from PyQt5.QtGui import QColor
 from app.common.utils import check_network
-from app.common.proxy_utils import get_proxies, set_checked_proxies
+from app.common.proxy_utils import get_proxies, check_proxies
 
 
 def add_to_startup():
@@ -49,11 +49,10 @@ def setup(cfg):
     with open(cfg.animeFile.value, 'w') as f:
         f.write("[]")
     cfg.set(cfg.downloadFolder, get_download_dir())
-    cfg.set(cfg.themeColor, QColor('#ff0162'))
     cfg.save()
     add_to_startup()
     print("Added to startup successfully!")
     get_proxies()
     print("This will take a while, please wait...")
-    set_checked_proxies()
+    check_proxies()
     print("First time setup completed successfully!\n")

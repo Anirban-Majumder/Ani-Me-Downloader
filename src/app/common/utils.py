@@ -1,15 +1,14 @@
 # coding:utf-8
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Event
 from urllib.parse import parse_qs, urlparse
-import os, json, random, time
-import socks, socket, requests
+import os, random, time, re
+import requests
 from bs4 import BeautifulSoup
-from .constants import Constants as constants
 from PyQt5.QtGui import QPixmap
-from .config import cfg, data_dir
+from app.common.config import cfg, data_dir
+from app.common.constants import Constants
 
-download_path = cfg.downloadFolder.value
 anime_file = cfg.animeFile.value
 proxy_file = cfg.proxyPath.value
 max_threads = cfg.maxThread.value
@@ -24,19 +23,20 @@ def compare_magnet_links(link1, link2):
     return xt1 == xt2
 
 
-def requests_get(url):
-    print(url)
+def requests_get(url, params=None):
     stop_event = Event()
     with open(proxy_file, 'r') as f:
         proxies = f.read().splitlines()
     random.shuffle(proxies)
+
     def fetch(proxy):
-        #print(stop_event.is_set())
         if not stop_event.is_set():
             try:
-                socks.set_default_proxy(socks.SOCKS4, proxy.split(':')[0], int(proxy.split(':')[1]))
-                socket.socket = socks.socksocket
-                response = requests.get(url, timeout=5)
+                session = requests.Session()
+                session.proxies = {'https': f'socks4://{proxy}'}
+                response = session.get(url, params=params, timeout=5)
+                final_url = response.url
+                print("Final URL with Query Parameters:", final_url)
                 response.raise_for_status()
                 if response.status_code == 200:
                     stop_event.set()
@@ -44,20 +44,21 @@ def requests_get(url):
             except:
                 pass
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
-        results = executor.map(fetch, proxies)
-        for result in results:
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        futures = [executor.submit(fetch, proxy) for proxy in proxies]
+        for future in as_completed(futures):
+            result = future.result()
             if result:
                 return result
+
     print("No result from the site")
     return None
 
 
 def get_nyaa_search_result(name):
     torrent = []
-    response = requests_get(f'https://nyaa.si/?q={name}&s=seeders&o=desc')
-    socks.set_default_proxy()
-    socket.socket = socks.socksocket
+    parms = {'f' : '0', 'c' : '1_0', 'q': name, 's': 'seeders', 'o': 'desc'}
+    response = requests_get(Constants.nyaa_url, parms)
     if not response:
         return torrent
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -74,34 +75,43 @@ def get_nyaa_search_result(name):
             torrent.append([title, magnet_link, size])
     except Exception as e:
         print(f"Error parsing nyaa.si: {e}")
+
+    print(f"Found {len(torrent)} torrents")
     return torrent
 
 
-def remove_invalid_chars(path, replace_with=''):
-    invalid_chars = '<>:"/\\|?*'
-    for char in invalid_chars:
-        path = path.replace(char, replace_with)
-    return path
+def remove_non_alphanum(string):
+    pattern = re.compile(r'[^\w\s]|_', re.UNICODE)
+    return pattern.sub('', string)
+
+
+def clean_title(title):
+    if re.search(r'season', title, re.IGNORECASE):
+        title = re.split(r'season', title, flags=re.IGNORECASE)[0]
+    if re.search(r'part', title, re.IGNORECASE):
+        title = re.split(r'part', title, flags=re.IGNORECASE)[0]
+    title = remove_non_alphanum(title)
+    return title.strip()
 
 
 def get_watch_url(title):
-    url = f'{constants.nineanime_url}/filter'
+    url = f'{Constants.nineanime_url}/filter'
     params = {'keyword': title}
     response = requests.get(url, params=params, timeout=5)
     soup = BeautifulSoup(response.text, 'html.parser')
     url = soup.find('div', {'class': 'item'}).find('a')['href']
-    watch_url = constants.nineanime_url + url
+    watch_url = Constants.nineanime_url + url
     return watch_url
 
 
 def get_anime_list(name):
-    query = constants.list_query
+    query = Constants.list_query
     variables = {
         'search': name
     }
-    url = constants.api_url
+    url = Constants.api_url
     response = requests.post(url, json={'query': query, 'variables': variables})
-    data = json.loads(response.text)
+    data = response.json()
     return data['data']['Page']['media']
 
 
@@ -154,7 +164,7 @@ def get_time_diffrence(req_time):
     return days, hours, minutes
 
 
-def check_network(url="https://example.com/"):
+def check_network(url = pingUrl):
     try:
         requests.get(url, timeout=5)
         return True

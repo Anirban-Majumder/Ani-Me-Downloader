@@ -2,7 +2,7 @@
 import os
 from enum import Enum
 from qfluentwidgets import (qconfig, QConfig, ConfigItem, OptionsConfigItem, BoolValidator,
-                            OptionsValidator,  EnumSerializer, FolderValidator,)
+                            OptionsValidator,  EnumSerializer, FolderValidator, ColorConfigItem)
 
 data_dir = os.path.join(os.path.expanduser("~"), ".Ani-Me-Downloader")
 
@@ -18,8 +18,11 @@ class MvQuality(Enum):
 class Config(QConfig):
     """ Config of application """
 
-    downloadFolder = ConfigItem(
-        "Folders", "Download", "/download", FolderValidator())
+    # folders
+    downloadFolder = ConfigItem("Folders", "Download", "/download", FolderValidator())
+    animeFile = ConfigItem("Folders", "AnimeFile", os.path.join(data_dir, "anime_file.json"))
+    proxyPath = ConfigItem("Folders", "ProxyPath", os.path.join(data_dir, "proxy.txt"))
+    testProxy = ConfigItem("Folders", "TestProxy", os.path.join(data_dir, "test_proxy.txt"))
 
     # main window
     minimizeToTray = ConfigItem(
@@ -36,12 +39,17 @@ class Config(QConfig):
     # software update
     checkUpdateAtStartUp = ConfigItem("Update", "CheckUpdateAtStartUp", False, BoolValidator())
 
-    animeFile = ConfigItem("Anime", "AnimeFile", os.path.join(data_dir, "anime_file.json"))
-    proxyPath = ConfigItem("Anime", "ProxyPath", os.path.join(data_dir, "proxy.txt"))
-    testProxy = ConfigItem("Anime", "TestProxy", os.path.join(data_dir, "test_proxy.txt"))
-    pingUrl = ConfigItem("Anime", "PingUrl", "https://www.google.com")
-    firstTime = ConfigItem("Anime","FirstTime", False)
-    maxThread = ConfigItem("Anime", "MaxThread", 6)
+    # miscellaneous
+    pingUrl = ConfigItem("Miscellaneous", "PingUrl", "https://example.com/")
+    firstTime = ConfigItem("Miscellaneous", "FirstTime", True)
+    maxThread = ConfigItem("Miscellaneous", "MaxThread", 6)
+
+    # last run
+    proxyLastChecked = ConfigItem("Lastrun", "ProxyLastChecked", 0)
+    animeLastChecked = ConfigItem("Lastrun", "AnimeLastChecked", 0)
+
+    # theme
+    themeColor = ColorConfigItem("QFluentWidgets", "ThemeColor", '#29f1ff')
 
 
 cfg = Config()
