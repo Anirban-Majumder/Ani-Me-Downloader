@@ -163,6 +163,7 @@ class SettingInterface(ScrollArea):
             return
 
         cfg.set(cfg.downloadFolder, folder)
+        cfg.save()
         self.downloadFolderCard.setContent(folder)
 
     def __connectSignalToSlot(self):

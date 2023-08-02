@@ -1,11 +1,13 @@
 from PyQt5.QtCore import Qt, QEvent
 from PyQt5.QtCore import QModelIndex
-from PyQt5.QtGui import  QPainter, QPen, QColor
-from PyQt5.QtWidgets import (QLabel, QVBoxLayout, QHBoxLayout, QVBoxLayout,
-                             QStyleOptionViewItem, QFormLayout)
+from PyQt5.QtGui import QPainter, QPen, QColor
+from PyQt5.QtWidgets import (
+    QLabel, QVBoxLayout, QHBoxLayout, QVBoxLayout, QStyleOptionViewItem, QFormLayout
+)
 from qfluentwidgets.components.dialog_box.dialog import MaskDialogBase, Ui_MessageBox
-from qfluentwidgets import (ListWidget, LineEdit, SpinBox, ComboBox, ListItemDelegate, isDarkTheme)
-
+from qfluentwidgets import (
+    ListWidget, LineEdit, SpinBox, ComboBox, ListItemDelegate, isDarkTheme
+)
 
 from ..common.utils import get_img
 from ..common.config import cfg
@@ -25,13 +27,13 @@ class ListDialog(MaskDialogBase, Ui_MessageBox):
         super().__init__(parent)
         self._setUpUi(title, content, self.widget)
 
-        # Create a layout for the message box
         self.setShadowEffect(60, (0, 10), QColor(0, 0, 0, 50))
         self.setMaskColor(QColor(0, 0, 0, 76))
         self._hBoxLayout.removeWidget(self.widget)
         self._hBoxLayout.addWidget(self.widget, 1, Qt.AlignCenter)
         self.message_box_layout = QVBoxLayout()
         self.vBoxLayout.insertLayout(1, self.message_box_layout)
+
         self.list_view = ListWidget()
         self.list_view.setMinimumWidth(500)
         self.list_view.setMinimumHeight(300)
@@ -43,19 +45,18 @@ class ListDialog(MaskDialogBase, Ui_MessageBox):
     def on_list_item_clicked(self):
         self.yesButton.setEnabled(True)
 
-
     def eventFilter(self, obj, e: QEvent):
-        if obj is self.window():
-            if e.type() == QEvent.Resize:
-                self._adjustText()
-
+        if obj is self.window() and e.type() == QEvent.Resize:
+            self._adjustText()
         return super().eventFilter(obj, e)
 
 
 class AnimeDialog(MaskDialogBase, Ui_MessageBox):
     def __init__(self, anime, parent=None):
         super().__init__(parent)
-        self._setUpUi("Verify and Confirm Info", " ", self.widget)
+        title = "Verify and Confirm Info"
+        content = "Make sure this info is correct and make corrections as necessary and Make sure of season no.\nPLEASE REMOVE SEASON AND PART FROM THE TITLE \neg. 'Attack on Titan Season 2' should be 'Attack on Titan' \nor  'Nanatsu no Taizai: Kamigami no Gekirin' should be 'Nanatsu no Taizai'"
+        self._setUpUi(title, content, self.widget)
         self.yesButton.setText("Confirm")
 
         # Create a layout for the message box
@@ -64,11 +65,14 @@ class AnimeDialog(MaskDialogBase, Ui_MessageBox):
         self._hBoxLayout.removeWidget(self.widget)
         self._hBoxLayout.addWidget(self.widget, 1, Qt.AlignCenter)
         self.message_box_layout = QHBoxLayout()
+        self.message_box_layout.setContentsMargins(24, 0, 24, 0)
+        self.textLayout.setContentsMargins(24, 24, 24, 0)
         self.vBoxLayout.insertLayout(1, self.message_box_layout)
 
         img = anime['coverImage']['extraLarge']
         name = anime['title']['romaji']
-        airing = anime['status'] == 'RELEASING'
+        airing = anime['status'] in ['RELEASING', 'HIATUS', 'CANCELLED']
+        season = anime['season']
         total_ep = anime['episodes'] if anime['episodes'] else 13
         airing_ep = anime['nextAiringEpisode']['episode'] if airing and anime['nextAiringEpisode'] else total_ep
 
@@ -82,16 +86,17 @@ class AnimeDialog(MaskDialogBase, Ui_MessageBox):
         form_layout = QFormLayout()
         self.message_box_layout.addLayout(form_layout, Qt.AlignRight)
 
-        # Add the anime title (not editable)
+        # Add the anime title
         self.title_label = LineEdit(self)
         self.title_label.setText(name)
+        self.title_label.setMinimumWidth(300)
         form_layout.addRow('Title:', self.title_label)
-        form_layout.setContentsMargins(30,30,30,30)
+        form_layout.setContentsMargins(24, 24, 24, 24)
         form_layout.setSpacing(8)
 
         # Add a spin box for the season
         self.season = SpinBox(self)
-        self.season.setValue(1)
+        self.season.setValue(season)
         form_layout.addRow('Season:', self.season)
 
         # Add a spin box for the next airing episode (only enabled if status is RELEASING)
@@ -108,7 +113,7 @@ class AnimeDialog(MaskDialogBase, Ui_MessageBox):
 
         # Add a combo box for the status
         self.status_combobox = ComboBox(self)
-        self.status_combobox.addItems(['FINISHED', 'RELEASING', 'NOT_YET_RELEASED'])
+        self.status_combobox.addItems(['FINISHED', 'RELEASING', 'NOT_YET_RELEASED', 'CANCELLED', 'HIATUS'])
         self.status_combobox.setCurrentText(anime['status'])
         self.status_combobox.setEnabled(False)
         form_layout.addRow('Status:', self.status_combobox)
@@ -116,7 +121,7 @@ class AnimeDialog(MaskDialogBase, Ui_MessageBox):
         self.download_type = ComboBox(self)
         self.download_type.addItems(['Full', 'Episodewise'])
         self.download_type.setCurrentText('Episodewise' if airing else 'Full')
-        form_layout.addRow('Download Type:              ', self.download_type)
+        form_layout.addRow('Download Type:', self.download_type)
 
         self.from_download = SpinBox(self)
         self.from_download.setValue(1)
@@ -133,19 +138,15 @@ class AnimeDialog(MaskDialogBase, Ui_MessageBox):
         self.update_widgets()
         self.download_type.currentTextChanged.connect(self.update_widgets)
 
-
-
-    def load_img(self,url,label):
+    def load_img(self, url, label):
         pixmap = get_img(url)
         scaled_pixmap = pixmap.scaled(self.img_size[0], self.img_size[1])
         label.setPixmap(scaled_pixmap)
 
     def eventFilter(self, obj, e: QEvent):
-      if obj is self.window():
-          if e.type() == QEvent.Resize:
-              self._adjustText()
-
-      return super().eventFilter(obj, e)
+        if obj is self.window() and e.type() == QEvent.Resize:
+            self._adjustText()
+        return super().eventFilter(obj, e)
 
     def update_widgets(self):
         if self.download_type.currentText() == "Full":
