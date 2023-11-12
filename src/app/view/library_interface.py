@@ -27,15 +27,14 @@ class ImageLabel(QLabel):
 
         # Draw the image with rounded corners
         rect = QRect(0, 0, self.width(), self.height())
-        rectf = QRectF(0, 0, self.width(), self.height())
         path = QPainterPath()
-        path.addRoundedRect(rectf, 12, 12)
+        path.addRect(0, 0, self.width(), self.height())
         painter.setClipPath(path)
         if self.pixmap():
             painter.drawPixmap(rect, self.pixmap())
 
         # Draw a black rectangle at the bottom of the image
-        bottom_rect_height = int(self.height() * 0.08)
+        bottom_rect_height = int(self.height() * 0.07)
         bottom_rect = QRect(0, self.height() - bottom_rect_height, self.width(), bottom_rect_height)
         painter.fillRect(bottom_rect, QColor('black'))
 
@@ -69,7 +68,6 @@ class ImageLabel(QLabel):
         painter.drawText(total_episodes_rect, Qt.AlignCenter, total_episodes_text)
 
     def enterEvent(self, event):
-
         delete_button = PrimaryToolButton(FluentIcon.DELETE)
         delete_button.clicked.connect(self.on_delete_button_clicked)
         self.layout.addWidget(delete_button, alignment=Qt.AlignTop | Qt.AlignRight)
@@ -99,7 +97,6 @@ class ImageLabel(QLabel):
             self.layout.addWidget(label, alignment=Qt.AlignTop)
 
         self.setStyleSheet(f"background-color: rgba({cfg.themeColor.value.red()}, {cfg.themeColor.value.green()}, {cfg.themeColor.value.blue()}, 210);")
-
 
     def leaveEvent(self, event):
         self.setStyleSheet("background-color: transparent;")
@@ -160,6 +157,7 @@ class LibraryInterface(BaseInterface):
         if self.delete_lable and self.animes:
             self.title_label.setParent(None)
             self.title_label.deleteLater()
+            self.delete_lable = False
 
         while self.grid_layout.count():
             widget = self.grid_layout.takeAt(0)

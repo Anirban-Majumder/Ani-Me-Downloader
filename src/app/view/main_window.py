@@ -23,7 +23,6 @@ from ..common.style_sheet import StyleSheet
 class MainWindow(FluentWindow):
     def __init__(self):
         super().__init__()
-
         self.initLayout()
 
         self.animes = self.loadAnime()
@@ -199,7 +198,7 @@ class MainWindow(FluentWindow):
         self.torrent_box = ListDialog(title, content, self)
         id, torrent_list = list[0], list[1]
         for torrent in torrent_list:
-            text = f"{torrent[0]} \n {torrent[2]}"
+            text = f"{torrent[2]} || {torrent[0]}"
             item = QListWidgetItem(text)
             item.setData(Qt.UserRole, torrent)
             self.torrent_box.list_view.addItem(item)
@@ -208,7 +207,7 @@ class MainWindow(FluentWindow):
             selected_torrent = self.torrent_box.list_view.currentItem().data(Qt.UserRole)
             for anime in self.animes:
                 if anime.id == id:
-                    anime.receiveData(selected_torrent)
+                    anime.receive_data(selected_torrent)
                     if self.workerThread.isRunning():
                         self.animes.remove(anime)
                         self.to_add.append(anime)

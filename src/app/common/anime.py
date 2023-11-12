@@ -231,8 +231,7 @@ class Anime(QObject):
         """
         if not data:
             return
-
-        name, magnet = data
+        name, magnet, size = data
         self.download_from_magnet(magnet, name)
         self.episodes_to_download = []
         self.episodes_downloading.append(('full', magnet))
