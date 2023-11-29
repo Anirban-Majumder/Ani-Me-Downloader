@@ -14,6 +14,7 @@ build and version of Python for your operating system [here](https://python.org/
 
 * `requests`
 * `PYQt5`
+* `PyQt-Fluent-Widgets`
 * `pysocks`
 * `beautifulsoup4`
 
@@ -30,13 +31,10 @@ git clone https://github.com/anirbanmajumder0/Ani-Me-Downloader
 2. Install dependencies
 
 ```
-cd Ani-Me-Downloader
+cd Ani-Me-Downloader/src
 ```
 ```
 pip install -r requirements.txt
-```
-```
-pip install PyQt-Fluent-Widgets -i https://pypi.org/simple/
 ```
 
 3. Change the working directory
