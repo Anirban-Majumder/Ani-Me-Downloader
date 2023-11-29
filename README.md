@@ -28,19 +28,16 @@ build and version of Python for your operating system [here](https://python.org/
 git clone https://github.com/anirbanmajumder0/Ani-Me-Downloader
 ```
 
-2. Install dependencies
+2. Change the working directory
 
 ```
 cd Ani-Me-Downloader/src
 ```
+
+3. Install dependencies
+
 ```
 pip install -r requirements.txt
-```
-
-3. Change the working directory
-
-```
-cd src
 ```
 
 4. Run the app
