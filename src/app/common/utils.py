@@ -1,8 +1,6 @@
 # coding:utf-8
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from threading import Event
 from urllib.parse import parse_qs, urlparse
-import os, random, time, re
+import os, time, re, requests
 import requests
 from bs4 import BeautifulSoup
 from PyQt5.QtGui import QPixmap
@@ -10,9 +8,8 @@ from app.common.config import cfg, data_dir
 from app.common.constants import Constants
 
 anime_file = cfg.animeFile.value
-proxy_file = cfg.proxyPath.value
-max_threads = cfg.maxThread.value
 pingUrl = cfg.pingUrl.value
+useProxy = cfg.useProxy.value
 
 
 def compare_magnet_links(link1, link2):
@@ -23,42 +20,11 @@ def compare_magnet_links(link1, link2):
     return xt1 == xt2
 
 
-def requests_get(url, params=None):
-    stop_event = Event()
-    with open(proxy_file, 'r') as f:
-        proxies = f.read().splitlines()
-    random.shuffle(proxies)
-
-    def fetch(proxy):
-        if not stop_event.is_set():
-            try:
-                session = requests.Session()
-                session.proxies = {'https': f'socks4://{proxy}'}
-                response = session.get(url, params=params, timeout=5)
-                final_url = response.url
-                print("Final URL with Query Parameters:", final_url)
-                response.raise_for_status()
-                if response.status_code == 200:
-                    stop_event.set()
-                    return response
-            except:
-                pass
-
-    with ThreadPoolExecutor(max_workers=max_threads) as executor:
-        futures = [executor.submit(fetch, proxy) for proxy in proxies]
-        for future in as_completed(futures):
-            result = future.result()
-            if result:
-                return result
-
-    print("No result from the site")
-    return None
-
-
 def get_nyaa_search_result(name):
     torrent = []
     parms = {'f' : '0', 'c' : '1_0', 'q': name, 's': 'seeders', 'o': 'desc'}
-    response = requests_get(Constants.nyaa_url, parms)
+    response = requests.get(Constants.proxy_url if useProxy else Constants.nyaa_url, parms)
+    print("Request URL:", response.url)
     if not response:
         return torrent
     soup = BeautifulSoup(response.text, 'html.parser')

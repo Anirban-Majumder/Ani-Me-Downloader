@@ -37,6 +37,13 @@ class SettingInterface(ScrollArea):
             self.downloadGroup
         )
         self.qualityandprovider = SettingCardGroup(self.tr('Quality & Providers'), self.scrollWidget)
+        self.useProxyCard = SwitchSettingCard(
+            FIF.VPN,
+            self.tr('Use proxy'),
+            self.tr('We recommend you to use proxy , '),
+            configItem=cfg.useProxy,
+            parent=self.qualityandprovider
+        )
         self.onlineMvQualityCard = OptionsSettingCard(
             cfg.onlineMvQuality,
             FIF.VIDEO,
@@ -128,6 +135,7 @@ class SettingInterface(ScrollArea):
 
         # add cards to group
         self.downloadGroup.addSettingCard(self.downloadFolderCard)
+        self.qualityandprovider.addSettingCard(self.useProxyCard)
         self.qualityandprovider.addSettingCard(self.onlineMvQualityCard)
         self.mainPanelGroup.addSettingCard(self.minimizeToTrayCard)
         self.mainPanelGroup.addSettingCard(self.showNotificationCard)
