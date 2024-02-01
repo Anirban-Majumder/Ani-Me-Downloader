@@ -37,8 +37,10 @@ class WorkerThread(QThread):
             self.sendError.emit("There is something wrong with your Internet connection.")
             return
         if not check_network(Constants.qbit_url):
-            self.sendError.emit("There is something wrong with your qBittorrent.")
-            return
+            from ..common.q_utils import start_qbittorrent
+            if not start_qbittorrent():
+                self.sendError.emit("There is something wrong with your qBittorrent.")
+                return
 
         if not self.animes:
             self.sendInfo.emit("Add Anime by Searching for it.")
@@ -51,20 +53,3 @@ class WorkerThread(QThread):
         from ..common.config import cfg
         cfg.animeLastChecked.value = int(time.time())
         cfg.save()
-
-
-class ProxyThread(QThread):
-
-    def __init__(self):
-        super().__init__()
-
-    def run(self):
-        from ..common.proxy_utils import get_proxies, check_proxies
-        from ..common.config import cfg
-        import time
-        current_time = time.time()
-        if current_time - cfg.proxyLastChecked.value > 86400:
-            cfg.proxyLastChecked.value = int(current_time)
-            cfg.save()
-            get_proxies()
-            check_proxies()

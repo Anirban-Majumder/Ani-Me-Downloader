@@ -21,8 +21,6 @@ class Config(QConfig):
     # folders
     downloadFolder = ConfigItem("Folders", "Download", "/download", FolderValidator())
     animeFile = ConfigItem("Folders", "AnimeFile", os.path.join(data_dir, "anime_file.json"))
-    proxyPath = ConfigItem("Folders", "ProxyPath", os.path.join(data_dir, "proxy.txt"))
-    testProxy = ConfigItem("Folders", "TestProxy", os.path.join(data_dir, "test_proxy.txt"))
 
     # main window
     minimizeToTray = ConfigItem(
@@ -40,12 +38,11 @@ class Config(QConfig):
     checkUpdateAtStartUp = ConfigItem("Update", "CheckUpdateAtStartUp", False, BoolValidator())
 
     # miscellaneous
+    useProxy = ConfigItem("Miscellaneous", "UseProxy", True, BoolValidator())
     pingUrl = ConfigItem("Miscellaneous", "PingUrl", "https://example.com/")
     firstTime = ConfigItem("Miscellaneous", "FirstTime", True)
-    maxThread = ConfigItem("Miscellaneous", "MaxThread", 6)
 
     # last run
-    proxyLastChecked = ConfigItem("Lastrun", "ProxyLastChecked", 0)
     animeLastChecked = ConfigItem("Lastrun", "AnimeLastChecked", 0)
 
     # theme

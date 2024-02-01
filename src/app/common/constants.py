@@ -4,7 +4,7 @@ class Constants:
     nyaa_url = 'https://nyaa.si'
     api_url = 'https://graphql.anilist.co'
     qbit_url = 'http://localhost:8080'
-    proxy_url ='https://api.proxyscrape.com/v2/?request=getproxies&protocol=socks4&timeout=5000&country=all'
+    proxy_url ='https://ani-me-downloader-proxy.vercel.app/api'
     airing_query = '''
     query ($id: Int) {
       Media(id: $id, type: ANIME) {
@@ -53,14 +53,22 @@ This project is to be used at the user's own risk, based on their government and
 6. Limitation of Liability :
 In no event shall Ani-Me-Downloader or its developers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on Ani-Me-Downloader's application, even if Ani-Me-Downloader or an authorized representative has been notified orally or in writing of the possibility of such damage.
 """
-    about_text="""You need to have qbittorrent installed on your system to use this application.
-If you don't have one, you can download it from here: https://www.qbittorrent.org/download.php
-After you are done with the installation, you need to configure the application to use it.
-To do that, go to settings and click on the 'Web UI' tab. Then Click on web user interface checkbox and turn it on.
-After that, Click on Bypass authentication for clients on localhost checkbox and click on apply.
-(Optional) You really should set a username and password for your qbittorrent web ui so that no one else can access it.
-
-Coming back to the tour :|
+    about_text0="""
+Welcome to Ani-Me-Downloader.
+This application is made to help in your anime consumption.
+It is still in development so you may face some bugs.
+To use this application you REALLY need to follow the next steps.
+Press okay to continue.
+"""
+    about_text1="""
+You must have qbittorrent installed on your system to use this application.
+Press okay to start downloading it in your browser.
+"""
+    about_text2="""
+Open the downloaded file and follow the instructions to install qbittorrent.
+After the application is Install on your system press okay to continue.
+"""
+    about_text="""Coming back to the tour :|
 You can search for the things to download from the search tab.
 then you can choose the the things from list of things that you searched for.
 After that, you can verify all the info and click on okay to start.

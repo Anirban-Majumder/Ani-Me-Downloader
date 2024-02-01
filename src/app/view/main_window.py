@@ -182,13 +182,29 @@ class MainWindow(FluentWindow):
         message.cancelButton.setText("I Disagree")
         if message.exec_():
             title=f"Hello, {user} here's a quick tour of Ani-Me Downloader"
-            message2 = MessageBox(title, Constants.about_text, self)
+            message2 = MessageBox(title, Constants.about_text0, self)
+            message2.yesButton.setText("Okay")
+            from ..common.q_utils import get_qbittorrent_url
             if message2.exec_():
-                cfg.set(cfg.firstTime, False)
-            else:
-                exit()
-        else:
-            exit()
+                title="PLEASE READ CAREFULLY (STEP 1)"
+                message3 = MessageBox(title, Constants.about_text1, self)
+                message3.yesButton.setText("Okay")
+                url = get_qbittorrent_url()
+                from PyQt5.QtCore import QUrl
+                from PyQt5.QtGui import QDesktopServices
+                if message3.exec_():
+                    QDesktopServices.openUrl(QUrl(url))
+                    title="PLEASE READ CAREFULLY (STEP 2)"
+                    message4 = MessageBox(title, Constants.about_text2, self)
+                    message4.yesButton.setText("Okay")
+                    if message4.exec_():
+                        title=f"{user} You sure You have Qbittorrent installed?"
+                        message5 = MessageBox(title, " ", self)
+                        message5.yesButton.setText("Yes")
+                        message5.cancelButton.setText("No")
+                        if message5.exec_():
+                            cfg.set(cfg.firstTime, False)
+
 
     def chooseTorrent(self, list):
         from ..components.customdialog import ListDialog
@@ -256,8 +272,6 @@ class MainWindow(FluentWindow):
 
         self.saveAnime()
         self.libraryInterface.update_grid(self.animes)
-        self.proxyThread = ProxyThread()
-        self.proxyThread.start()
 
     def loadAnime(self):
         try:
