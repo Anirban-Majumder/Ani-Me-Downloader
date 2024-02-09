@@ -212,6 +212,11 @@ class Anime(QObject):
                         additional = f'{episode_number:02} '
                         if additional in title_lower:
                             return magnet_link
+                    else:
+                        additional = f' s{self.season:02}e{episode_number:02} '
+                        if additional in title_lower:
+                            return magnet_link
+
         else:
             for title, magnet_link, size in torrents:
                 if regex.search(title):
