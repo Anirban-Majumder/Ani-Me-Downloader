@@ -42,7 +42,6 @@ def get_nyaa_search_result(name):
     except Exception as e:
         print(f"Error parsing nyaa.si: {e}")
 
-    print(f"Found {len(torrent)} torrents")
     return torrent
 
 
@@ -61,12 +60,16 @@ def clean_title(title):
 
 
 def get_watch_url(title):
-    url = f'{Constants.nineanime_url}/filter'
-    params = {'keyword': title}
-    response = requests.get(url, params=params, timeout=5)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    url = soup.find('div', {'class': 'item'}).find('a')['href']
-    watch_url = Constants.nineanime_url + url
+    watch_url = Constants.nineanime_url
+    try:
+        url = f'{Constants.nineanime_url}/filter'
+        params = {'keyword': title}
+        response = requests.get(url, params=params, timeout=5)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        url = soup.find('div', {'class': 'item'}).find('a')['href']
+        watch_url = Constants.nineanime_url + url
+    except Exception as e:
+        print(f"Error getting watch url: {e}")
     return watch_url
 
 
@@ -105,15 +108,19 @@ def get_img(url):
 
 
 def get_season(url):
-    response = requests.get(url, timeout=5)
-    if response.status_code == 200:
-        soup= BeautifulSoup(response.text, 'html.parser')
-        try:
-            season = soup.find('div', {'class': 'swiper-slide season active'}).find('div', {'class': 'name'}).text.strip()
-            season = int(season.split(' ')[1])
-        except Exception as e:
-            season = 1
-            print(e)
+    season = 1
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            soup= BeautifulSoup(response.text, 'html.parser')
+            try:
+                season = soup.find('div', {'class': 'swiper-slide season active'}).find('div', {'class': 'name'}).text.strip()
+                season = int(season.split(' ')[1])
+            except Exception as e:
+                season = 1
+                print(e)
+    except Exception as e:
+        print(f"Error getting season: {e}")
     return season
 
 
