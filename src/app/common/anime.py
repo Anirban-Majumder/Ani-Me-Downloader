@@ -50,6 +50,7 @@ class Anime(QObject):
 
     def start(self):
         """Start downloading episodes or the entire season."""
+        print('-'*80)
         print(f'Looking into {self.name}')
         if self.episodes_downloading:
             self.check_downloading()
@@ -81,6 +82,7 @@ class Anime(QObject):
 
         self.infoSignal.emit('searching')
         torrents = self.get_torrent_list()
+        print(f"Found {len(torrents)} torrents")
         self.errorSignal.emit('searching')
 
         if not torrents:
@@ -112,27 +114,28 @@ class Anime(QObject):
         self.infoSignal.emit(f'Looking for {name}')
 
         self.infoSignal.emit('searching')
-        torrents = (
-            self.result if self.result else self.get_torrent_list()
-        )
-        self.result = torrents
+
+        if not self.result:
+            self.result = self.get_torrent_list()
+        print(f"Found {len(self.result)} torrents")
+
         self.errorSignal.emit('searching')
 
-        if not torrents:
+        if not self.result:
             self.errorSignal.emit(f'No torrent found for {name}')
             return False
 
-        magnet = self.select_torrent(torrents, episode_number)
+        magnet = self.select_torrent(self.result, episode_number)
 
         if not magnet:
+            print(f'Torrent not found from preferred uploaders! for episode {episode_number}')
             self.errorSignal.emit('Torrent not found from preferred uploaders!')
             return False
 
         self.download_from_magnet(magnet, name)
         self.episodes_downloading.append((episode_number, magnet))
-
-        episode_index = self.episodes_to_download.index(episode_number)
-        del self.episodes_to_download[episode_index]
+        print(episode_number, 'added to episodes_downloading', self.episodes_to_download)
+        self.episodes_to_download.remove(episode_number)
 
         if episode_number == self.total_episodes:
             return False
@@ -152,30 +155,28 @@ class Anime(QObject):
         )
         self.successSignal.emit(f'Download started {name}')
 
-    def get_torrent_list(self):
+    def get_torrent_list(self, retry_count=2):
         """Get a list of torrents for the given name.
+
+        Args:
+            retry_count (int): The number of times to retry the search if no results are found.
 
         Returns:
             list: A list of tuples containing the title, magnet link, and size of torrents.
         """
-        torrents = get_nyaa_search_result(self.search_name)
+        for _ in range(retry_count):
 
-        if not torrents:
-            self.errorSignal.emit('No result found...')
-            self.infoSignal.emit('Trying Again...')
+            torrents = get_nyaa_search_result(self.search_name) if self.search_name==self.name else [list(item) for item in set(tuple(x) for x in (get_nyaa_search_result(self.search_name) + get_nyaa_search_result(self.name)))]
+            if torrents:
+                return torrents
 
+            self.infoSignal.emit('No result found... Trying Again...')
             if not check_network():
                 self.errorSignal.emit('Internet connection not available!')
                 exit()
 
-            torrents = get_nyaa_search_result(self.search_name)
-
-            if not torrents:
-                self.errorSignal.emit(
-                    'Either the anime is not available or the name is wrong!'
-                )
-
-        return torrents
+        self.errorSignal.emit('Either the anime is not available or the name is wrong!')
+        return []
 
     def select_torrent(self, torrents, episode_number="batch"):
         """Select the best torrent from a list of torrents.
@@ -192,7 +193,7 @@ class Anime(QObject):
         search_name = re.escape(self.search_name)
         season = f'(season {self.season})' if self.format != 'movie' else ''
 
-        pattern = rf'\b({name}|{search_name})\b.*?\b1080p\b'
+        pattern = rf'\b(1080p.*({name}|{search_name})|({name}|{search_name}).*1080p)\b'
         regex = re.compile(pattern, re.IGNORECASE)
 
         if isinstance(episode_number, int):
@@ -255,9 +256,12 @@ class Anime(QObject):
                 torrent_name = magnet_torrent['name']
 
                 if magnet_torrent and (magnet_torrent['progress'] * 100) == 100:
-                    self.episodes_downloading.remove(
-                        [episode_number, magnet_link]
-                    )
+                    try:
+                        self.episodes_downloading = {episode_number: magnet_link for episode_number, magnet_link in self.episodes_downloading}
+                        del self.episodes_downloading[episode_number]
+                        self.episodes_downloading = [[episode_number, magnet_link] for episode_number, magnet_link in self.episodes_downloading.items()]
+                    except ValueError:
+                        print(f'*******Error deleting {torrent_name} {episode_number}from episodes_downloading*********')
                     self.episodes_downloaded.append(episode_number)
                     print(f'{torrent_name} has finished downloading :)')
                     requests.post(
