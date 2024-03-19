@@ -198,7 +198,7 @@ class Anime(QObject):
 
         if isinstance(episode_number, int):
             for title, magnet_link, size in torrents:
-                if regex.search(title):
+                if regex.search(title) and 'vostfr' not in title.lower():
                     title_lower = title.lower()
                     if '[ember]' in title_lower:
                         additional = f' s{self.season:02}e{episode_number:02} '
@@ -212,7 +212,14 @@ class Anime(QObject):
                         additional = f'{episode_number:02} '
                         if additional in title_lower:
                             return magnet_link
+                    elif '[toonshub]' in title_lower:
+                        additional = f'e{episode_number} '
+                        if additional in title_lower:
+                            return magnet_link
                     else:
+                        additional = f' s{self.season:02}e{episode_number:02} ' if self.season >= 2 else f' e{episode_number:02} '
+                        if additional in title_lower:
+                            return magnet_link
                         additional = f' s{self.season:02}e{episode_number:02} '
                         if additional in title_lower:
                             return magnet_link
