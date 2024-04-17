@@ -4,7 +4,7 @@ class Constants:
     nyaa_url = 'https://nyaa.si'
     api_url = 'https://graphql.anilist.co'
     qbit_url = 'http://localhost:8080'
-    proxy_url ='https://ani-me-downloader-proxy.vercel.app/api'
+    proxy_url ='https://ani-me-downloader-proxy.vercel.app'
     airing_query = '''
     query ($id: Int) {
       Media(id: $id, type: ANIME) {
