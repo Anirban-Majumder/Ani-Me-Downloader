@@ -1,6 +1,6 @@
 # coding:utf-8
 class Constants:
-    nineanime_url = 'https://aniwave.to'
+    nineanime_url = 'https://aniwave.li'
     nyaa_url = 'https://nyaa.si'
     api_url = 'https://graphql.anilist.co'
     qbit_url = 'http://localhost:8080'
