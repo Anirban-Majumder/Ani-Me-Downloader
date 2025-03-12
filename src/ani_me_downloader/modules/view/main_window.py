@@ -19,6 +19,7 @@ from .setting_interface import SettingInterface, cfg
 from ..common.anime import Anime
 from ..common.torrent import Torrent
 from ..common.style_sheet import StyleSheet
+from ..common.utils import get_r_path
 
 
 class MainWindow(FluentWindow):
@@ -101,7 +102,7 @@ class MainWindow(FluentWindow):
     def initWindow(self):
         self.resize(850, 700)
         self.setMinimumWidth(600)
-        self.logo = QIcon('app/resource/logo.png')
+        self.logo = QIcon(get_r_path('logo.png'))
         self.setWindowIcon(self.logo)
         self.setWindowTitle('  Ani-Me  Downloader  ')
         self.titleBar.setAttribute(Qt.WA_StyledBackground)

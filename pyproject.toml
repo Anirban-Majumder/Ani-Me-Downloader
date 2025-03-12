@@ -1,0 +1,111 @@
+# This project was generated with 0.3.22 using template: https://github.com/beeware/briefcase-template@v0.3.22
+[tool.briefcase]
+project_name = "Ani-Me Downloader"
+bundle = "com.example"
+version = "0.0.1"
+url = "https://example.com/ani-me-downloader"
+license.file = "LICENSE"
+author = "Anirban Majumder"
+author_email = "anirban@example.com"
+
+[tool.briefcase.app.ani-me-downloader]
+#icon = "src/ani_me_downloader/resources/icons/helloworld"
+#splash_background_color = "#D3E6F5"
+formal_name = "Ani-Me Downloader"
+description = "A simple and beautiful anime downloader and streamer."
+long_description = """More details about the app should go here.
+"""
+sources = [
+    "src/ani_me_downloader",
+]
+test_sources = [
+    "tests",
+]
+
+requires = [
+    # GUI components
+    "PyQt5==5.15.9",
+    "PyQt-Fluent-Widgets==1.0.0",
+    # Web requests
+    "libtorrent",
+    "requests",
+    "bs4"
+]
+test_requires = [
+    # Add your cross-platform test requirements here
+]
+
+[tool.briefcase.app.ani-me-downloader.macOS]
+universal_build = true
+requires = [
+    # Add your macOS-specific app requirements here
+]
+
+[tool.briefcase.app.ani-me-downloader.linux]
+requires = [
+    # Add your Linux-specific app requirements here
+]
+
+[tool.briefcase.app.ani-me-downloader.linux.system.debian]
+system_requires = [
+    # Add any system packages needed at build the app here
+]
+
+system_runtime_requires = [
+    # Add any system packages needed at runtime here
+]
+
+[tool.briefcase.app.ani-me-downloader.linux.system.rhel]
+system_requires = [
+    # Add any system packages needed at build the app here
+]
+
+system_runtime_requires = [
+    # Add any system packages needed at runtime here
+]
+
+[tool.briefcase.app.ani-me-downloader.linux.system.suse]
+system_requires = [
+    # Add any system packages needed at build the app here
+]
+
+system_runtime_requires = [
+    # Add any system packages needed at runtime here
+]
+
+[tool.briefcase.app.ani-me-downloader.linux.system.arch]
+system_requires = [
+    # Add any system packages needed at build the app here
+]
+
+system_runtime_requires = [
+    # Add any system packages needed at runtime here
+]
+
+[tool.briefcase.app.ani-me-downloader.linux.flatpak]
+flatpak_runtime = "org.freedesktop.Platform"
+flatpak_runtime_version = "24.08"
+flatpak_sdk = "org.freedesktop.Sdk"
+
+[tool.briefcase.app.ani-me-downloader.windows]
+requires = [
+    # Add your Windows-specific app requirements here
+]
+
+# Mobile deployments
+[tool.briefcase.app.ani-me-downloader.iOS]
+requires = [
+    # Add your iOS-specific app requirements here
+]
+
+[tool.briefcase.app.ani-me-downloader.android]
+requires = [
+    # Add your Android-specific app requirements here
+]
+
+# Web deployments
+[tool.briefcase.app.ani-me-downloader.web]
+requires = [
+    # Add your web-specific app requirements here
+]
+

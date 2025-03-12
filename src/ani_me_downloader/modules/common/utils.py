@@ -4,8 +4,8 @@ import os, time, re, requests
 import requests
 from bs4 import BeautifulSoup
 from PyQt5.QtGui import QPixmap
-from app.common.config import cfg, data_dir
-from app.common.constants import Constants
+from .config import cfg, data_dir
+from .constants import Constants
 
 anime_file = cfg.animeFile.value
 pingUrl = cfg.pingUrl.value
@@ -143,3 +143,9 @@ def check_network(url = pingUrl):
         return True
     except:
         return False
+    
+from pathlib import Path   
+def get_r_path(path):
+    return str(Path(__file__).joinpath("../../../resources").resolve().joinpath(path))
+   
+

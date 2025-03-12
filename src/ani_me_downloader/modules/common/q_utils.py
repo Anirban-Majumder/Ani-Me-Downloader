@@ -29,14 +29,6 @@ def start_qbittorrent():
         return False
     return True
 
-def set_custom_configurations():
-    config_file_path = os.path.join(os.environ.get('APPDATA'), 'qBittorrent')
-    custom_file_path = 'app/resource/custom.ini'
-    #TODO check if file exits
-    #close qbittorrent
-    #copy custom.ini to config.ini specificly
-    #open qbittorrent
-    return os.path.exists(config_file_path)
 
 def get_qbittorrent_url():
     rss_url = "https://www.fosshub.com/feed/5b8793a7f9ee5a5c3e97a3b2.xml"
