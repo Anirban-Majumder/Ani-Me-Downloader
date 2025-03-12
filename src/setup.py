@@ -1,6 +1,5 @@
 import os , shutil, getpass
 from PyQt5.QtGui import QColor
-from app.common.utils import check_network
 
 
 def add_to_startup():
@@ -40,14 +39,11 @@ def get_download_dir():
         return str(os.path.join(Path.home(), "Downloads"))
 
 def setup(cfg):
-    if not check_network():
-        print("Please check your network connection and try again.")
-        exit()
     print("\nWorking on first time setup...")
     os.makedirs(os.path.dirname(cfg.animeFile.value), exist_ok=True)
     with open(cfg.animeFile.value, 'w') as f:
         f.write("[]")
     cfg.set(cfg.downloadFolder, get_download_dir())
     cfg.save()
-    add_to_startup()
-    print("Added to startup successfully!")
+    #add_to_startup()
+    #print("Added to startup successfully!")

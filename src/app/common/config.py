@@ -5,6 +5,7 @@ from qfluentwidgets import (qconfig, QConfig, ConfigItem, OptionsConfigItem, Boo
                             OptionsValidator,  EnumSerializer, FolderValidator, ColorConfigItem)
 
 data_dir = os.path.join(os.path.expanduser("~"), ".Ani-Me-Downloader")
+download_dir = os.path.join(os.path.expanduser("~"), "Downloads")
 
 class MvQuality(Enum):
     """ MV quality enumeration class """
@@ -19,9 +20,9 @@ class Config(QConfig):
     """ Config of application """
 
     # folders
-    downloadFolder = ConfigItem("Folders", "Download", "/download", FolderValidator())
+    downloadFolder = ConfigItem("Folders", "Download", download_dir, FolderValidator())
     animeFile = ConfigItem("Folders", "AnimeFile", os.path.join(data_dir, "anime_file.json"))
-
+    torrentFile = ConfigItem("Folders", "TorrentFile", os.path.join(data_dir, "torrent_file.json"))
     # main window
     minimizeToTray = ConfigItem(
         "MainWindow", "MinimizeToTray", False, BoolValidator())
