@@ -2,6 +2,7 @@
 from enum import Enum
 
 from qfluentwidgets import StyleSheetBase, Theme, isDarkTheme, qconfig
+from .utils import get_r_path
 
 
 class StyleSheet(StyleSheetBase, Enum):
@@ -19,4 +20,5 @@ class StyleSheet(StyleSheetBase, Enum):
 
     def path(self, theme=Theme.AUTO):
         theme = qconfig.theme if theme == Theme.AUTO else theme
-        return f"app/resource/qss/{theme.value.lower()}/{self.value}.qss"
+        resource_path = f"qss/{theme.value.lower()}/{self.value}.qss"
+        return get_r_path(resource_path)

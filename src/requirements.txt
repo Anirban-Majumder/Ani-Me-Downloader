@@ -1,4 +1,0 @@
-requests==2.31.0
-beautifulsoup4==4.12.2
-PyQt5==5.15.9
-PyQt-Fluent-Widgets==1.0.0
