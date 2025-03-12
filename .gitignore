@@ -154,11 +154,5 @@ cython_debug/
 #vscode
 .vscode/
 src/.vscode/
-src/data
 src/test
-src/cache
-src/download
-todo.txt
-src/test.py
-src/run.bat
-src/test2.py
+
