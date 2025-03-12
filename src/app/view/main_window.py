@@ -17,6 +17,7 @@ from .download_interface import DownloadInterface
 from .setting_interface import SettingInterface, cfg
 
 from ..common.anime import Anime
+from ..common.torrent import Torrent
 from ..common.style_sheet import StyleSheet
 
 
@@ -25,9 +26,10 @@ class MainWindow(FluentWindow):
         super().__init__()
         self.initLayout()
 
-        self.animes = self.loadAnime()
-        self.to_add = []
-        self.to_remove = []
+        self.animes, self.torrents = self.load()
+        self.anime_to_add = []
+        self.anime_to_remove = []
+        self.torrent_to_add = []
         self.searchingBox = None
         self.searchInterface = SearchInterface(self)
         self.libraryInterface = LibraryInterface(self)
@@ -73,20 +75,28 @@ class MainWindow(FluentWindow):
 
     def initSignals(self):
         self.runThread = RunThread()
-        self.runThread.runSignal.connect(self.startWorker)
+        self.runThread.runSignal.connect(self.startAnimeThread)
         self.runThread.start()
         self.searchInterface.addSignal.connect(self.addAnime)
         self.libraryInterface.deleteSignal.connect(self.removeAnime)
 
-    def startWorker(self):
-        self.workerThread = WorkerThread(self.animes)
-        self.workerThread.sendInfo.connect(self.showInfo)
-        self.workerThread.sendSuccess.connect(self.showSuccess)
-        self.workerThread.sendError.connect(self.showError)
-        self.workerThread.sendTorrent.connect(self.chooseTorrent)
-        self.workerThread.sendFinished.connect(self.onFinished)
+    def startAnimeThread(self):
+        self.AnimeThread = AnimeThread(self.animes)
+        self.AnimeThread.sendInfo.connect(self.showInfo)
+        self.AnimeThread.sendSuccess.connect(self.showSuccess)
+        self.AnimeThread.sendError.connect(self.showError)
+        self.AnimeThread.sendTorrent.connect(self.chooseTorrent)
+        self.AnimeThread.sendFinished.connect(self.onFinished)
 
-        self.workerThread.start()
+        self.AnimeThread.start()
+
+    def startTorrentThread(self):
+        self.TorrentThread = TorrentThread(self.torrents)
+        self.TorrentThread.progressSignal.connect(self.update_download_progress)
+        self.TorrentThread.completedSignal.connect(self.onCompleted)
+        self.TorrentThread.errorSignal.connect(self.showError)
+        
+        self.TorrentThread.start()
 
     def initWindow(self):
         self.resize(850, 700)
@@ -101,7 +111,8 @@ class MainWindow(FluentWindow):
         self.move(w // 2 - self.width()  // 2, h // 2 - self.height() // 2)
 
         StyleSheet.MAIN_WINDOW.apply(self)
-        self.startWorker()
+        self.startAnimeThread()
+        self.startTorrentThread()
 
     def __create_tray_icon(self):
         show_action = QAction("Show", self)
@@ -117,6 +128,10 @@ class MainWindow(FluentWindow):
         self.tray_icon.setIcon(self.logo)
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
+
+    def closeEvent(self, event):
+        self.saveTorrent()
+        super().closeEvent(event)
 
     def __tempcloseEvent(self, event):
         self.hide()
@@ -171,6 +186,10 @@ class MainWindow(FluentWindow):
             )
             w.show()
 
+    def update_download_progress(self, name, progress, speed):
+        """Update the download interface with progress."""
+        self.downloadInterface.update_progress(name, progress, speed)
+    
     def showFirstTime(self):
         from qfluentwidgets import MessageBox
         from ..common.constants import Constants
@@ -205,7 +224,6 @@ class MainWindow(FluentWindow):
                         if message5.exec_():
                             cfg.set(cfg.firstTime, False)
 
-
     def chooseTorrent(self, list):
         from ..components.customdialog import ListDialog
         from PyQt5.QtWidgets import QListWidgetItem
@@ -224,24 +242,33 @@ class MainWindow(FluentWindow):
             for anime in self.animes:
                 if anime.id == id:
                     anime.receive_data(selected_torrent)
-                    if self.workerThread.isRunning():
+                    if self.AnimeThread.isRunning():
                         self.animes.remove(anime)
-                        self.to_add.append(anime)
+                        self.anime_to_add.append(anime)
                     self.saveAnime()
                     break
 
     def addAnime(self, anime_info):
         new_anime = Anime(**anime_info)
-        if self.workerThread.isRunning():
-            self.to_add.append(new_anime)
+        if self.AnimeThread.isRunning():
+            self.anime_to_add.append(new_anime)
             self.switchTo(self.libraryInterface)
-            self.libraryInterface.update_grid(self.to_add + self.animes)
+            self.libraryInterface.update_grid(self.anime_to_add + self.animes)
         else:
             self.animes.insert(0, new_anime)
             self.switchTo(self.libraryInterface)
             self.libraryInterface.update_grid(self.animes)
             self.saveAnime()
-            self.startWorker()
+            self.startAnimeThread()
+
+    def addTorrent(self, torrent_info):
+        new_torrent = Torrent(**torrent_info)
+        if self.TorrentThread.isRunning():
+            self.torrent_to_add.append(new_torrent)
+        else:
+            self.torrents.insert(0, new_torrent)
+            self.saveTorrent()
+            self.startTorrentThread()
 
     def removeAnime(self, id):
         for anime in self.animes:
@@ -250,8 +277,8 @@ class MainWindow(FluentWindow):
                     shutil.rmtree(anime.output_dir)
                 except:
                     self.showError(f"Sorry, can't delete the folder {anime.output_dir} cause Something else is still using It!!!")
-                if self.workerThread.isRunning():
-                    self.to_remove.append(anime)
+                if self.AnimeThread.isRunning():
+                    self.anime_to_remove.append(anime)
                 self.animes.remove(anime)
                 self.libraryInterface.update_grid(self.animes)
                 break
@@ -261,26 +288,43 @@ class MainWindow(FluentWindow):
     def onFinished(self, animes):
         self.animes = animes
 
-        if self.to_remove:
-            for anime in self.to_remove:
+        if self.anime_to_remove:
+            for anime in self.anime_to_remove:
                 self.animes.remove(anime)
-            self.to_remove = []
+            self.anime_to_remove = []
 
-        if self.to_add:
-            self.animes = self.to_add + self.animes
-            self.to_add = []
+        if self.anime_to_add:
+            self.animes = self.anime_to_add + self.animes
+            self.anime_to_add = []
 
         self.saveAnime()
         self.libraryInterface.update_grid(self.animes)
 
-    def loadAnime(self):
+    def onCompleted(self, torrents):
+        self.torrents = torrents
+
+        if self.torrent_to_add:
+            self.torrents = self.torrent_to_add + self.torrents
+            self.torrent_to_add = []
+
+        self.saveTorrent()
+
+    def load(self):
         try:
             with open(cfg.animeFile.value, 'r') as f:
                 data = json.load(f)
                 animes = [Anime.from_dict(data) for data in data]
         except:
             animes = []
-        return animes
+
+        try :
+            with open(cfg.torrentFile.value, 'r') as f:
+                data = json.load(f)
+                torrents = [Torrent.from_dict(data) for data in data]
+                torrents =[]
+        except:
+            torrents = []
+        return animes, torrents
 
     def saveAnime(self):
         try:
@@ -289,3 +333,11 @@ class MainWindow(FluentWindow):
                 json.dump(data, f, indent=4)
         except:
             print("Error in saveAnime")
+
+    def saveTorrent(self):
+        try:
+            data = [torrent.to_dict() for torrent in self.torrents]
+            with open(cfg.torrentFile.value, 'w') as f:
+                json.dump(data, f, indent=4)
+        except:
+            print("Error in saveTorrent")
