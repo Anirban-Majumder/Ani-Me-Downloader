@@ -71,6 +71,6 @@ _build
 distribute-*
 local
 .DS_Store
-venv
+.venv
 logs
 src/ani_me_downloader/resources/icons/
