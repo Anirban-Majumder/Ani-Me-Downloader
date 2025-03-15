@@ -24,15 +24,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [ "Windows", "macOS", "Ubuntu-24.04","Ubuntu-22.04"] #"Fedora-40", "iOS", "Android"]
+        target: [ "Windows", "Ubuntu-24.04","Ubuntu-22.04"] #"Fedora-40", "macOS", "iOS", "Android"]
         include:
           - target: "Windows"
             output-format: "app"
             runs-on: "windows-latest"
 
-          - target: "macOS"
-            output-format: "app"
-            runs-on: "macos-latest"
+          #- target: "macOS"
+          #  output-format: "app"
+          #  runs-on: "macos-latest"
 
           - target: "Ubuntu-24.04"
             platform: "Linux"
@@ -57,12 +57,12 @@ jobs:
           #  pre-command: "sudo apt -y install socat"
           #  briefcase-run-prefix: "xvfb-run"
           #  briefcase-args: "--target fedora:40"
-#
+
           #- target: "iOS"
           #  output-format: "Xcode"
           #  runs-on: "macos-latest"
           #  briefcase-run-args: "--device 'iPhone SE (3rd generation)'"
-#
+
           #- target: "Android"
           #  output-format: "Gradle"
           #  runs-on: "ubuntu-latest"
@@ -146,3 +146,36 @@ jobs:
         with:
           name: Log-Failure-${{ matrix.target }}
           path: logs/*
+
+  release:
+    name: Create GitHub Release and Upload Artifacts
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get Commit Hash
+        id: commit
+        run: echo "commit_hash=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ env.commit_hash }} \
+            --title "Release ${{ env.commit_hash }}" \
+            --notes "Automated release for commit ${{ env.commit_hash }}" \
+            || echo "Release already exists"
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload Artifacts to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ env.commit_hash }} artifacts/**/* --clobber

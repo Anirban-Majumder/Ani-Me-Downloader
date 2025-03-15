@@ -13,3 +13,44 @@ QLabel#title {
     font-family: "YellowTail";
     qproperty-alignment: AlignCenter;
 }
+
+QTreeWidget {
+    background-color: #ffffff;
+    color: black;
+    border: none;
+}
+
+QFrame {
+    background-color: #f0f0f0;
+}
+
+QPushButton {
+    background-color: #eee;
+    color: black;
+    border: none;
+    padding: 4px;
+}
+
+QSplitter::handle {
+    background-color: #cccccc;
+    height: 2px;
+}
+
+QTreeWidget::item {
+    padding: 4px 0;
+}
+
+QProgressBar {
+    text-align: center;
+    border: none;
+    background-color: #eaeaea;
+}
+
+QProgressBar::chunk {
+    background-color: #3daee9;
+}
+
+#detailPanel {
+    border-top: 1px solid #c0c0c0;
+    margin-top: 2px;
+}

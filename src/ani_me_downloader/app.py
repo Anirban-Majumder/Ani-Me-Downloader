@@ -51,7 +51,7 @@ def main():
 
     # run on first time setup
     if not os.path.exists(data_dir):
-        from setup import setup
+        from .setup import setup
         setup(cfg)
 
     # create main window

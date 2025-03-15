@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QLabel, QTreeWidget, QTreeWidgetItem, QProgressBar,
                              QSplitter, QFrame, QVBoxLayout, QHBoxLayout, QPushButton, 
-                             QMenu, QAction, QComboBox)
+                             QMenu, QAction, QComboBox, QStackedWidget, QWidget)
 from PyQt5.QtCore import Qt, pyqtSignal, QUrl
 from PyQt5.QtGui import QDesktopServices
 from .base_interface import BaseInterface
@@ -20,6 +20,7 @@ class DownloadInterface(BaseInterface):
         # Main layout with splitter for torrent list and details
         self.splitter = QSplitter(Qt.Vertical, self)
         self.torrent_list = QTreeWidget()
+        self.torrent_list.setIndentation(0)
         self.torrent_list.setObjectName("torrentList")
         self.torrent_list.setUniformRowHeights(True)
         self.torrent_list.setColumnCount(9)
@@ -34,17 +35,24 @@ class DownloadInterface(BaseInterface):
         # Detail panel (initially collapsed)
         self.detail_panel = QFrame()
         self.detail_panel.setObjectName("detailPanel")
+        self.detail_panel.setMinimumHeight(200)  # Set minimum height
+        self.panel_visible = True  # Track panel visibility
+   
         detail_layout = QVBoxLayout(self.detail_panel)
         button_layout = QHBoxLayout()
+
         self.detail_button = QPushButton("Details")
         self.content_button = QPushButton("Content")
         self.detail_button.clicked.connect(lambda: self.show_panel("detail"))
         self.content_button.clicked.connect(lambda: self.show_panel("content"))
+        self.toggle_panel_button = QPushButton("Hide Details")
+        self.toggle_panel_button.clicked.connect(self.toggle_panel)
+        button_layout.addStretch()  # Push toggle button to the right
+        button_layout.addWidget(self.toggle_panel_button)
         button_layout.addWidget(self.detail_button)
         button_layout.addWidget(self.content_button)
         detail_layout.addLayout(button_layout)
         
-        from PyQt5.QtWidgets import QStackedWidget, QWidget
         self.panel_stack = QStackedWidget()
         
         # detail_page with dynamic torrent details
@@ -59,6 +67,7 @@ class DownloadInterface(BaseInterface):
         self.content_page = QWidget()
         cp_layout = QVBoxLayout(self.content_page)
         self.content_tree = QTreeWidget()
+        self.content_tree.setIndentation(0)
         self.content_tree.setObjectName("contentTree")
         self.content_tree.setAlternatingRowColors(True)
         self.content_tree.setColumnCount(5)
@@ -76,6 +85,77 @@ class DownloadInterface(BaseInterface):
         self.torrent_items = {}  # Track items by torrent name
         self.torrent_data = {}   # Map torrent name to real torrent objects
         self.current_torrent = None 
+        self.resize_columns()
+
+    def on_item_clicked(self, item, column):
+        """Handle torrent item click to show details"""
+        self.current_torrent = item.text(0)
+        self.populate_detail_panel(item)
+
+        # Make sure panel is visible when item is clicked
+        if not self.panel_visible:
+            self.toggle_panel()
+
+        # Default to detail view on click
+        self.show_panel("detail")
+
+    def resizeEvent(self, event):
+        """Update column sizes when the window is resized"""
+        super().resizeEvent(event)
+        self.resize_columns()
+
+    def resize_columns(self):
+        """Set optimal column sizes for both tree widgets"""
+        # Main torrent list columns
+        total_width = self.torrent_list.width()
+        self.torrent_list.setColumnWidth(0, int(total_width * 0.35))  # Name (35%)
+        self.torrent_list.setColumnWidth(1, int(total_width * 0.10))  # Size (8%)
+        self.torrent_list.setColumnWidth(2, int(total_width * 0.15))  # Progress (15%)
+        self.torrent_list.setColumnWidth(3, int(total_width * 0.12))  # Status (10%)
+        self.torrent_list.setColumnWidth(4, int(total_width * 0.07))  # Seeds (5%)
+        self.torrent_list.setColumnWidth(5, int(total_width * 0.07))  # Peers (5%)
+        self.torrent_list.setColumnWidth(6, int(total_width * 0.11))  # DL Speed (8%)
+        self.torrent_list.setColumnWidth(7, int(total_width * 0.11))  # UL Speed (7%)
+        self.torrent_list.setColumnWidth(8, int(total_width * 0.07))  # ETA (7%)
+
+        # Content tree columns
+        content_width = self.content_tree.width()
+        self.content_tree.setColumnWidth(0, int(content_width * 0.40))  # Name (40%)
+        self.content_tree.setColumnWidth(1, int(content_width * 0.10))  # Size (10%)
+        self.content_tree.setColumnWidth(2, int(content_width * 0.20))  # Progress (20%)
+        self.content_tree.setColumnWidth(3, int(content_width * 0.15))  # Priority (15%)
+        self.content_tree.setColumnWidth(4, int(content_width * 0.15))  # Remaining (15%)
+
+    def toggle_panel(self):
+        """Toggle the visibility of the detail panel"""
+        if self.panel_visible:
+            # Hide the panel
+            current_sizes = self.splitter.sizes()
+            self.splitter.setSizes([current_sizes[0] + current_sizes[1], 0])
+            self.toggle_panel_button.setText("Show Details")
+            self.panel_visible = False
+        else:
+            # Show the panel
+            total_height = self.splitter.height()
+            self.splitter.setSizes([int(total_height * 0.7), int(total_height * 0.3)])
+            self.toggle_panel_button.setText("Hide Details")
+            self.panel_visible = True
+
+    def show_panel(self, panel_type):
+        """Show detail or content panel and make sure splitter shows it"""
+        # Make sure panel is visible
+        if not self.panel_visible:
+            self.toggle_panel()
+
+        # Set the currently visible panel
+        if panel_type == "detail":
+            self.panel_stack.setCurrentWidget(self.detail_page)
+            self.detail_button.setStyleSheet("background-color: #29f1ff;")
+            self.content_button.setStyleSheet("")
+        else:
+            self.panel_stack.setCurrentWidget(self.content_page)
+            self.content_button.setStyleSheet("background-color: #29f1ff;")
+            self.detail_button.setStyleSheet("")
 
     def set_torrent_data(self, torrents):
         """Register the list of torrent objects so that file info can be displayed dynamically."""
@@ -100,6 +180,7 @@ class DownloadInterface(BaseInterface):
                 torrent.ul_speed, 
                 torrent.eta
             )
+    
     def add_download(self, name):
         """Add a new download entry to the UI with a progress bar widget."""
         item = QTreeWidgetItem([name, "", "", "pending", "", "", "0", "0", "0"])
@@ -209,9 +290,6 @@ class DownloadInterface(BaseInterface):
         if action.lower() in ["pause", "resume", "stop"]:
             self.pauseResumeSignal.emit(torrent_name)
         elif action.lower() == "open":
-            self.openFolderSignal.emit(torrent_name)
-            
-            # As a fallback, try to open the folder directly if we have path info
             torrent = self.torrent_data.get(torrent_name)
             if torrent and hasattr(torrent, 'path') and torrent.path:
                 QDesktopServices.openUrl(QUrl.fromLocalFile(torrent.path))
@@ -229,7 +307,7 @@ class DownloadInterface(BaseInterface):
         """Populate the detail and content panels based on the selected torrent item."""
         torrent_name = item.text(0)
         self.current_torrent = torrent_name
-        
+
         # Update the detail panel with basic torrent info
         details = (
             f"Name: {item.text(0)}\nSize: {item.text(1)}\nStatus: {item.text(3)}\n"
@@ -237,42 +315,43 @@ class DownloadInterface(BaseInterface):
             f"UL Speed: {item.text(7)} KB/s\nETA: {item.text(8)}"
         )
         self.detail_label.setText(details)
-        
+
         # Update content panel with the real file list from the torrent data
         self.content_tree.clear()
         torrent_obj = self.torrent_data.get(torrent_name)
-        
+
         if torrent_obj and hasattr(torrent_obj, "files") and torrent_obj.files:
             for index, f in enumerate(torrent_obj.files):
                 file_item = QTreeWidgetItem([f["name"], f["size"], "", f["priority"], f["remaining"]])
                 progress_bar = QProgressBar()
                 progress_bar.setRange(0, 100)
-                progress_bar.setValue(f["progress"])
+                # Fix: Convert float to int for progress bar
+                progress_bar.setValue(int(f["progress"]))
                 progress_bar.setTextVisible(True)
                 progress_bar.setFormat(f"{f['progress']:.1f}%")
                 self.content_tree.addTopLevelItem(file_item)
                 self.content_tree.setItemWidget(file_item, 2, progress_bar)
-                
+
                 # Add priority combo box
                 prio_combo = QComboBox()
-                prio_combo.addItems(["Low", "Normal", "High"])
+                prio_combo.addItems(["Skip","Low", "Normal", "High"])
                 prio_combo.setCurrentText(f["priority"])
-                
+
                 # Use a lambda with default args to capture current values
                 prio_combo.currentTextChanged.connect(
                     lambda value, idx=index, tname=torrent_name: 
                     self.changePrioritySignal.emit(tname, idx, value)
                 )
-                
+
                 self.content_tree.setItemWidget(file_item, 3, prio_combo)
         else:
-            # If no file data is available, simply display a message
+            # If no file data is available, show a message
             no_files_item = QTreeWidgetItem(["No files available or metadata not yet received"])
             self.content_tree.addTopLevelItem(no_files_item)
 
     def show_panel(self, panel_type):
         # Expand the detail panel to one-third of the window height
-        self.detail_panel.setMaximumHeight(self.height() / 3)
+        self.detail_panel.setMaximumHeight(int(2*self.height() / 3))
         
         if panel_type == "detail":
             self.panel_stack.setCurrentWidget(self.detail_page)

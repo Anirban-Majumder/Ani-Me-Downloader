@@ -43,6 +43,8 @@ def setup(cfg):
     os.makedirs(os.path.dirname(cfg.animeFile.value), exist_ok=True)
     with open(cfg.animeFile.value, 'w') as f:
         f.write("[]")
+    with open(cfg.torrentFile.value, 'w') as f:
+        f.write("[]")
     cfg.set(cfg.downloadFolder, get_download_dir())
     cfg.save()
     #add_to_startup()
