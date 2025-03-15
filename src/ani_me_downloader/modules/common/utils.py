@@ -59,15 +59,37 @@ def clean_title(title):
     return title.strip()
 
 
+def get_season(url):
+    season = 1
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            try:
+                active_slide = soup.select_one('div.swiper-slide.aitem.active, div.swiper-slide.active')
+                if active_slide:
+                    season_text = active_slide.select_one('div.detail span').text.strip()
+                    season = int(season_text.split(' ')[1])
+            except Exception as e:
+                season = 1
+                print(f"Error parsing season: {e}")
+    except Exception as e:
+        print(f"Error getting season: {e}")
+    return season
+
 def get_watch_url(title):
     watch_url = Constants.nineanime_url
     try:
-        url = f'{Constants.nineanime_url}/filter'
+        url = f'https://animekai.to/ajax/anime/search'
         params = {'keyword': title}
         response = requests.get(url, params=params, timeout=5)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        url = soup.find('div', {'class': 'item'}).find('a')['href']
-        watch_url = Constants.nineanime_url + url
+        data = response.json()
+        if data.get('status') == 200 and data.get('result', {}).get('html'):
+            soup = BeautifulSoup(data['result']['html'], 'html.parser')
+            first_item = soup.find('a', {'class': 'aitem'})
+            if first_item and 'href' in first_item.attrs:
+                href_path = first_item['href']
+                watch_url = 'https://animekai.to' + href_path
     except Exception as e:
         print(f"Error getting watch url: {e}")
     return watch_url
@@ -105,23 +127,6 @@ def get_img(url):
         print(f"Error loading image: {e}")
     default_pixmap = QPixmap(os.path.join("app","resource","logo.png"))
     return default_pixmap
-
-
-def get_season(url):
-    season = 1
-    try:
-        response = requests.get(url, timeout=5)
-        if response.status_code == 200:
-            soup= BeautifulSoup(response.text, 'html.parser')
-            try:
-                season = soup.find('div', {'class': 'swiper-slide season active'}).find('div', {'class': 'name'}).text.strip()
-                season = int(season.split(' ')[1])
-            except Exception as e:
-                season = 1
-                print(e)
-    except Exception as e:
-        print(f"Error getting season: {e}")
-    return season
 
 
 def get_time_diffrence(req_time):

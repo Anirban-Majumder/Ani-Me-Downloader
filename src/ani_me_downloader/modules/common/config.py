@@ -1,7 +1,8 @@
 # coding:utf-8
 import os
 from enum import Enum
-from qfluentwidgets import (qconfig, QConfig, ConfigItem, OptionsConfigItem, BoolValidator,
+from qfluentwidgets import (qconfig, QConfig, ConfigItem, RangeConfigItem,
+                            OptionsConfigItem, BoolValidator, RangeValidator,
                             OptionsValidator,  EnumSerializer, FolderValidator, ColorConfigItem)
 
 data_dir = os.path.join(os.path.expanduser("~"), ".Ani-Me-Downloader")
@@ -21,6 +22,14 @@ class Config(QConfig):
 
     # folders
     downloadFolder = ConfigItem("Folders", "Download", download_dir, FolderValidator())
+    checkEpisodeInterval = RangeConfigItem(
+        "Download", "CheckEpisodeInterval", 3600, RangeValidator(60, 86400)
+    )  # Default 1 hour (3600 sec), min 1 min, max 24 hours
+    
+    maxConcurrentDownloads = RangeConfigItem(
+        "Download", "MaxConcurrentDownloads", 2, RangeValidator(1, 10)
+    )
+    
     animeFile = ConfigItem("Folders", "AnimeFile", os.path.join(data_dir, "anime_file.json"))
     torrentFile = ConfigItem("Folders", "TorrentFile", os.path.join(data_dir, "torrent_file.json"))
     # main window

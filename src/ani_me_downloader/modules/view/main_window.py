@@ -19,7 +19,7 @@ from .setting_interface import SettingInterface, cfg
 from ..common.anime import Anime
 from ..common.torrent import Torrent
 from ..common.style_sheet import StyleSheet
-from ..common.utils import get_r_path
+from ..common.utils import get_r_path, compare_magnet_links
 
 
 class MainWindow(FluentWindow):
@@ -81,22 +81,79 @@ class MainWindow(FluentWindow):
         self.searchInterface.addSignal.connect(self.addAnime)
         self.libraryInterface.deleteSignal.connect(self.removeAnime)
 
-    def startAnimeThread(self):
-        self.AnimeThread = AnimeThread(self.animes)
-        self.AnimeThread.sendInfo.connect(self.showInfo)
-        self.AnimeThread.sendSuccess.connect(self.showSuccess)
-        self.AnimeThread.sendError.connect(self.showError)
-        self.AnimeThread.sendTorrent.connect(self.chooseTorrent)
-        self.AnimeThread.sendFinished.connect(self.onFinished)
+        self.downloadInterface.pauseResumeSignal.connect(self.toggle_torrent_state)
+        self.downloadInterface.deleteSignal.connect(self.delete_torrent)
+        self.downloadInterface.changePrioritySignal.connect(self.change_file_priority)
 
+    def toggle_torrent_state(self, torrent_name):
+        """Pause or resume a torrent based on its current state"""
+        if hasattr(self, 'TorrentThread'):
+            for torrent in self.torrents:
+                if torrent.name == torrent_name:
+                    current_status = torrent.status.lower()
+
+                    if current_status == "paused":
+                        if self.TorrentThread.resume_torrent(torrent_name):
+                            self.showSuccess(f"Resumed torrent: {torrent_name}")
+                    else:
+                        if self.TorrentThread.pause_torrent(torrent_name):
+                            self.showSuccess(f"Paused torrent: {torrent_name}")
+                    break
+
+    def delete_torrent(self, torrent_name, delete_files=False):
+        """Remove a torrent and optionally its files"""
+        if hasattr(self, 'TorrentThread'):
+            if self.TorrentThread.remove_torrent(torrent_name, delete_files):
+                message = f"Deleted torrent: {torrent_name}"
+                if delete_files:
+                    message += " with files"
+                self.showSuccess(message)
+                # Remove from UI
+                for i, torrent in enumerate(self.torrents):
+                    if torrent.name == torrent_name:
+                        self.torrents.pop(i)
+                        break
+                self.saveTorrent()
+            else:
+                self.showError(f"Failed to delete torrent: {torrent_name}")
+
+    def change_file_priority(self, torrent_name, file_index, priority):
+        """Change the priority of a file in a torrent"""
+        if hasattr(self, 'TorrentThread'):
+            if self.TorrentThread.set_file_priorities(torrent_name, file_index, priority):
+                self.showInfo(f"Changed priority for file in {torrent_name} to {priority}")
+            else:
+                self.showError(f"Failed to change priority for file in {torrent_name}")
+
+
+    def startAnimeThread(self):
+        if not self.animes:
+            self.showInfo("Add Anime by Searching for it.")
+            return
+
+        self.AnimeThread = AnimeThread(self.animes)
+        self.AnimeThread.sendFinished.connect(self.onFinished)
+        for anime in self.animes:
+            anime.infoSignal.connect(self.showInfo)
+            anime.successSignal.connect(self.showSuccess)
+            anime.errorSignal.connect(self.showError)
+            anime.selectionSignal.connect(self.chooseTorrent)
+            anime.addTorrentSignal.connect(self.addTorrent)
         self.AnimeThread.start()
 
     def startTorrentThread(self):
-        self.TorrentThread = TorrentThread(self.torrents)
-        self.TorrentThread.progressSignal.connect(self.update_download_progress)
-        self.TorrentThread.completedSignal.connect(self.onCompleted)
-        self.TorrentThread.errorSignal.connect(self.showError)
+        if not self.torrents:
+            return
         
+        self.downloadInterface.set_torrent_data(self.torrents)
+        
+        self.TorrentThread = TorrentThread(self.torrents)
+        self.TorrentThread.torrentComplete.connect(self.onTorrentComplete)
+        self.TorrentThread.progressSignal.connect(self.downloadInterface.update_progress)
+        self.TorrentThread.exitSignal.connect(self.onTorrentThreadExit)
+        self.TorrentThread.errorSignal.connect(self.showError)
+        #TODO: have a better way to handle this
+        #self.TorrentThread.filesUpdatedSignal.connect(self.onFilesUpdated)
         self.TorrentThread.start()
 
     def initWindow(self):
@@ -131,7 +188,29 @@ class MainWindow(FluentWindow):
         self.tray_icon.show()
 
     def closeEvent(self, event):
+        # Stop the torrent thread properly to prevent crashes
+        if hasattr(self, 'TorrentThread') and self.TorrentThread.isRunning():
+            print("Stopping torrent thread...")
+            self.TorrentThread.stop()
+
+            # Don't wait on the GUI thread - just give it time to clean up
+            import time
+            time.sleep(0.5)  # Short delay to allow cleanup to start
+
+        # Save torrent state
         self.saveTorrent()
+
+        # Disconnect all signals to prevent callbacks after deletion
+        if hasattr(self, 'TorrentThread'):
+            try:
+                self.TorrentThread.progressSignal.disconnect()
+                self.TorrentThread.completedSignal.disconnect()
+                self.TorrentThread.errorSignal.disconnect()
+                self.TorrentThread.filesUpdatedSignal.disconnect()
+            except:
+                pass
+    
+        # Handle the standard close event
         super().closeEvent(event)
 
     def __tempcloseEvent(self, event):
@@ -187,9 +266,48 @@ class MainWindow(FluentWindow):
             )
             w.show()
 
-    def update_download_progress(self, name, progress, speed):
-        """Update the download interface with progress."""
-        self.downloadInterface.update_progress(name, progress, speed)
+    def onTorrentComplete(self, to_remove):
+        """Called when a torrent has completed downloading"""
+        if to_remove:
+            for torrent in to_remove:
+                if hasattr(self, 'AnimeThread') and self.AnimeThread.isRunning():
+                    # Queue the completed torrent info for later processing 
+                    # when AnimeThread finishes
+                    if not hasattr(self, 'completed_torrents'):
+                        self.completed_torrents = []
+
+                    self.completed_torrents.append(torrent)
+                    self.showInfo(f"Queued {torrent.name} for processing after anime thread completes")
+                else:
+                    anime_id, magnet = torrent.anime_id, torrent.magnet
+                    for anime in self.animes:
+                        if anime.id == anime_id:
+                            # Find which episode was downloading with this magnet link
+                            for i, (episode, episode_magnet) in enumerate(anime.episodes_downloading):
+                                if compare_magnet_links(episode_magnet, magnet):
+                                    # Move from downloading to downloaded
+                                    anime.episodes_downloaded.append(episode)
+                                    anime.episodes_downloading.pop(i)
+                                    self.showSuccess(f"Episode {episode} of {anime.name} completed downloading")
+                                    break
+                                
+                            # Save the updated anime list
+                            self.saveAnime()
+                            break
+                        
+                # Remove the torrent regardless of whether AnimeThread is running
+                self.delete_torrent(torrent.name, False)
+    
+    def onFilesUpdated(self, torrent_name):
+        """Called when a torrent's file list has been updated"""
+        #print(f"Files updated for {torrent_name}")
+        # Update the UI if this is the currently selected torrent
+        if self.downloadInterface.current_torrent == torrent_name:
+            for i in range(self.downloadInterface.torrent_list.topLevelItemCount()):
+                item = self.downloadInterface.torrent_list.topLevelItem(i)
+                if item.text(0) == torrent_name:
+                    self.downloadInterface.populate_detail_panel(item)
+                    break
     
     def showFirstTime(self):
         from qfluentwidgets import MessageBox
@@ -206,24 +324,7 @@ class MainWindow(FluentWindow):
             message2.yesButton.setText("Okay")
             from ..common.q_utils import get_qbittorrent_url
             if message2.exec_():
-                title="PLEASE READ CAREFULLY (STEP 1)"
-                message3 = MessageBox(title, Constants.about_text1, self)
-                message3.yesButton.setText("Okay")
-                url = get_qbittorrent_url()
-                from PyQt5.QtCore import QUrl
-                from PyQt5.QtGui import QDesktopServices
-                if message3.exec_():
-                    QDesktopServices.openUrl(QUrl(url))
-                    title="PLEASE READ CAREFULLY (STEP 2)"
-                    message4 = MessageBox(title, Constants.about_text2, self)
-                    message4.yesButton.setText("Okay")
-                    if message4.exec_():
-                        title=f"{user} You sure You have Qbittorrent installed?"
-                        message5 = MessageBox(title, " ", self)
-                        message5.yesButton.setText("Yes")
-                        message5.cancelButton.setText("No")
-                        if message5.exec_():
-                            cfg.set(cfg.firstTime, False)
+                cfg.set(cfg.firstTime, False)
 
     def chooseTorrent(self, list):
         from ..components.customdialog import ListDialog
@@ -243,7 +344,7 @@ class MainWindow(FluentWindow):
             for anime in self.animes:
                 if anime.id == id:
                     anime.receive_data(selected_torrent)
-                    if self.AnimeThread.isRunning():
+                    if hasattr(self, 'AnimeThread') and self.AnimeThread.isRunning():
                         self.animes.remove(anime)
                         self.anime_to_add.append(anime)
                     self.saveAnime()
@@ -251,7 +352,7 @@ class MainWindow(FluentWindow):
 
     def addAnime(self, anime_info):
         new_anime = Anime(**anime_info)
-        if self.AnimeThread.isRunning():
+        if hasattr(self, 'AnimeThread') and self.AnimeThread.isRunning():
             self.anime_to_add.append(new_anime)
             self.switchTo(self.libraryInterface)
             self.libraryInterface.update_grid(self.anime_to_add + self.animes)
@@ -264,9 +365,23 @@ class MainWindow(FluentWindow):
 
     def addTorrent(self, torrent_info):
         new_torrent = Torrent(**torrent_info)
-        if self.TorrentThread.isRunning():
+
+        # Check if this torrent already exists by comparing magnet links
+        for existing_torrent in self.torrents:
+            if compare_magnet_links(existing_torrent.magnet, new_torrent.magnet):
+                print(f"Torrent already exists: {new_torrent.name}")
+                return
+
+        if hasattr(self, 'TorrentThread') and self.TorrentThread.isRunning():
+            print(f"Adding new torrent to queue: {new_torrent.name}")
+            # Add to the pending list for the torrent thread
             self.torrent_to_add.append(new_torrent)
+
+            # Also add to UI immediately
+            self.torrents.append(new_torrent)
+            self.downloadInterface.set_torrent_data([new_torrent])
         else:
+            print(f"Torrent thread not running, adding torrent directly: {new_torrent.name}")
             self.torrents.insert(0, new_torrent)
             self.saveTorrent()
             self.startTorrentThread()
@@ -278,7 +393,7 @@ class MainWindow(FluentWindow):
                     shutil.rmtree(anime.output_dir)
                 except:
                     self.showError(f"Sorry, can't delete the folder {anime.output_dir} cause Something else is still using It!!!")
-                if self.AnimeThread.isRunning():
+                if hasattr(self, 'AnimeThread') and self.AnimeThread.isRunning():
                     self.anime_to_remove.append(anime)
                 self.animes.remove(anime)
                 self.libraryInterface.update_grid(self.animes)
@@ -288,6 +403,20 @@ class MainWindow(FluentWindow):
 
     def onFinished(self, animes):
         self.animes = animes
+        if hasattr(self, 'completed_torrents') and self.completed_torrents:
+            for torrent in self.completed_torrents:
+                anime_id, magnet = torrent.anime_id, torrent.magnet
+                for anime in self.animes:
+                    if anime.id == anime_id:
+                        for i, (episode, episode_magnet) in enumerate(anime.episodes_downloading):
+                            if compare_magnet_links(episode_magnet, magnet):
+                                anime.episodes_downloaded.append(episode)
+                                anime.episodes_downloading.pop(i)
+                                self.showSuccess(f"Episode {episode} of {anime.name} completed downloading (from queue)")
+                                break
+                            
+            # Clear the queue after processing
+            self.completed_torrents = []
 
         if self.anime_to_remove:
             for anime in self.anime_to_remove:
@@ -301,7 +430,7 @@ class MainWindow(FluentWindow):
         self.saveAnime()
         self.libraryInterface.update_grid(self.animes)
 
-    def onCompleted(self, torrents):
+    def onTorrentThreadExit(self, torrents):
         self.torrents = torrents
 
         if self.torrent_to_add:
@@ -315,14 +444,15 @@ class MainWindow(FluentWindow):
             with open(cfg.animeFile.value, 'r') as f:
                 data = json.load(f)
                 animes = [Anime.from_dict(data) for data in data]
+                print(f"Loaded {len(animes)} animes")
         except:
             animes = []
 
-        try :
+        try:
             with open(cfg.torrentFile.value, 'r') as f:
                 data = json.load(f)
-                torrents = [Torrent.from_dict(data) for data in data]
-                torrents =[]
+                torrents = [Torrent.from_dict(torrent_data) for torrent_data in data]
+                print(f"Loaded {len(torrents)} torrents")
         except:
             torrents = []
         return animes, torrents
@@ -337,8 +467,24 @@ class MainWindow(FluentWindow):
 
     def saveTorrent(self):
         try:
-            data = [torrent.to_dict() for torrent in self.torrents]
+            # Remove duplicates before saving
+            unique_torrents = []
+            unique_hashes = set()
+            
+            for torrent in self.torrents:
+                import re
+                hash_match = re.search(r'btih:([a-fA-F0-9]+)', torrent.magnet)
+                if hash_match:
+                    torrent_hash = hash_match.group(1).lower()
+                    if torrent_hash not in unique_hashes:
+                        unique_hashes.add(torrent_hash)
+                        unique_torrents.append(torrent)
+                else:
+                    # If we can't extract hash, just add it
+                    unique_torrents.append(torrent)
+            
+            data = [torrent.to_dict() for torrent in unique_torrents]
             with open(cfg.torrentFile.value, 'w') as f:
                 json.dump(data, f, indent=4)
-        except:
-            print("Error in saveTorrent")
+        except Exception as e:
+            print(f"Error in saveTorrent: {e}")

@@ -20,7 +20,8 @@ class Anime(QObject):
     infoSignal = pyqtSignal(str)
     errorSignal = pyqtSignal(str)
     successSignal = pyqtSignal(str)
-    torrentSignal = pyqtSignal(list)
+    selectionSignal = pyqtSignal(list)
+    addTorrentSignal = pyqtSignal(dict)
 
     def __init__(self, **kwargs):
         """Initialize an instance of the Anime class."""
@@ -52,8 +53,6 @@ class Anime(QObject):
         """Start downloading episodes or the entire season."""
         print('-'*80)
         print(f'Looking into {self.name}')
-        if self.episodes_downloading:
-            self.check_downloading()
 
         if self.airing:
             self.check_currently_airing()
@@ -91,7 +90,7 @@ class Anime(QObject):
         magnet = self.select_torrent(torrents)
 
         if not magnet:
-            self.torrentSignal.emit([self.id, torrents])
+            self.selectionSignal.emit([self.id, torrents])
             return False
 
         self.download_from_magnet(magnet, self.name)
@@ -104,6 +103,7 @@ class Anime(QObject):
         not_failed = True
         while (
             not_failed
+            and self.episodes_to_download  # Check if list is not empty
             and self.episodes_to_download[0] <= self.last_aired_episode
         ):
             not_failed = self.download_episode(self.episodes_to_download[0])
@@ -149,12 +149,18 @@ class Anime(QObject):
             magnet_link (str): The magnet link to use for the download.
             name (str): The name of the file being downloaded.
         """
-        download_data = {'urls': magnet_link, 'savepath': self.output_dir}
-        requests.post(
-            f'{Constants.qbit_url}/api/v2/torrents/add', data=download_data
-        )
-        self.successSignal.emit(f'Download started {name}')
+        # Create torrent info and emit signal to add it
+        torrent_info = {
+            'name': name,
+            'magnet': magnet_link,
+            'path': self.output_dir,
+            'anime_id': self.id,
+            'status': 'downloading'
+        }
 
+        self.addTorrentSignal.emit(torrent_info)
+        self.successSignal.emit(f'Download started {name}')
+ 
     def get_torrent_list(self, retry_count=2):
         """Get a list of torrents for the given name.
 
@@ -248,42 +254,6 @@ class Anime(QObject):
         self.download_from_magnet(magnet, name)
         self.episodes_to_download = []
         self.episodes_downloading.append(('full', magnet))
-
-    def check_downloading(self):
-        """Check the status of any episodes that are currently being downloaded."""
-        torrents = requests.get(f'{Constants.qbit_url}/api/v2/torrents/info').json()
-
-        if self.episodes_downloading:
-            for episode_number, magnet_link in self.episodes_downloading[:]:
-                magnet_torrent = next(
-                    (
-                        torrent
-                        for torrent in torrents
-                        if compare_magnet_links(
-                            torrent['magnet_uri'], magnet_link
-                        )
-                    ),
-                    None,
-                )
-                torrent_name = magnet_torrent['name']
-
-                if magnet_torrent and (magnet_torrent['progress'] * 100) == 100:
-                    try:
-                        self.episodes_downloading = {episode_number: magnet_link for episode_number, magnet_link in self.episodes_downloading}
-                        del self.episodes_downloading[episode_number]
-                        self.episodes_downloading = [[episode_number, magnet_link] for episode_number, magnet_link in self.episodes_downloading.items()]
-                    except ValueError:
-                        print(f'*******Error deleting {torrent_name} {episode_number}from episodes_downloading*********')
-                    self.episodes_downloaded.append(episode_number)
-                    print(f'{torrent_name} has finished downloading :)')
-                    requests.post(
-                        f'{Constants.qbit_url}/api/v2/torrents/pause',
-                        data={'hashes': magnet_torrent['hash']},
-                    )
-                else:
-                    print(
-                        f"{torrent_name} is {(magnet_torrent['progress'] * 100):.2f}% done & has {(magnet_torrent['eta']/60):.2f} mins left !!"
-                    )
 
     def check_currently_airing(self):
         """Check if the anime is still airing and update the next_eta, last_aired_episode, and total_episodes attributes accordingly."""

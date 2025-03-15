@@ -3,7 +3,7 @@ from qfluentwidgets import (SettingCardGroup, SwitchSettingCard,
                             OptionsSettingCard, PushSettingCard, ScrollArea,
                             ExpandLayout, CustomColorSettingCard, setTheme, setThemeColor)
 from qfluentwidgets import FluentIcon as FIF
-from qfluentwidgets import InfoBar
+from qfluentwidgets import InfoBar, RangeSettingCard
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QLabel, QFileDialog
 
@@ -26,7 +26,7 @@ class SettingInterface(ScrollArea):
         # setting label
         self.settingLabel = QLabel("Settings", self)
 
-        # music folders
+        # download
         self.downloadGroup = SettingCardGroup(
             "On this PC", self.scrollWidget)
         self.downloadFolderCard = PushSettingCard(
@@ -36,6 +36,23 @@ class SettingInterface(ScrollArea):
             cfg.get(cfg.downloadFolder),
             self.downloadGroup
         )
+        self.downloadLimitCard = RangeSettingCard(
+            cfg.maxConcurrentDownloads,
+            FIF.DOWNLOAD,
+            "Max concurrent downloads",
+            "Maximum number of items to download at once",
+            self.downloadGroup
+        )
+        self.checkEpisodeIntervalCard = RangeSettingCard(
+            cfg.checkEpisodeInterval,
+            FIF.UPDATE,
+            "Check for new episodes (sec)",
+            "How frequently to check for new episodes (in seconds)",
+            self.downloadGroup
+        )
+        
+
+        
         self.qualityandprovider = SettingCardGroup(self.tr('Quality & Providers'), self.scrollWidget)
         self.useProxyCard = SwitchSettingCard(
             FIF.VPN,
@@ -134,7 +151,10 @@ class SettingInterface(ScrollArea):
         self.settingLabel.move(36, 30)
 
         # add cards to group
+        
         self.downloadGroup.addSettingCard(self.downloadFolderCard)
+        self.downloadGroup.addSettingCard(self.downloadLimitCard)
+        self.downloadGroup.addSettingCard(self.checkEpisodeIntervalCard)
         self.qualityandprovider.addSettingCard(self.useProxyCard)
         self.qualityandprovider.addSettingCard(self.onlineMvQualityCard)
         self.mainPanelGroup.addSettingCard(self.minimizeToTrayCard)

@@ -14,3 +14,71 @@ QLabel#title {
     font-family: "YellowTail";
     qproperty-alignment: AlignCenter;
 }
+
+QHeaderView {
+    background-color: #333;
+    color: white;
+}
+
+QHeaderView::section {
+    background-color: #444;
+    color: white;
+    padding: 4px;
+    border: 1px solid #555;
+}
+
+/* Make sure the headers are readable when selected */
+QHeaderView::section:selected {
+    background-color: #555;
+    color: white;
+}
+
+QTreeWidget {
+    background-color: #2b2b2b;
+    color: white;
+    border: none;
+}
+
+/* Force both normal and alternate items to have the same background */
+QTreeWidget::item {
+    background-color: #2b2b2b;
+}
+
+QTreeWidget::item:alternate {
+    background-color: #2b2b2b;
+}
+
+QFrame {
+    background-color: transparent;
+}
+
+QPushButton {
+    background-color: #555;
+    color: white;
+    border: none;
+    padding: 4px;
+}
+
+QSplitter::handle {
+    background-color: #444444;
+    height: 2px;
+}
+
+QTreeWidget::item {
+    padding: 4px 0;
+}
+
+QProgressBar {
+    text-align: center;
+    border: none;
+    background-color: #333333;
+}
+
+QProgressBar::chunk {
+    background-color: #2980b9;
+}
+
+#detailPanel {
+    border-top: 1px solid #444444;
+    margin-top: 2px;
+}
