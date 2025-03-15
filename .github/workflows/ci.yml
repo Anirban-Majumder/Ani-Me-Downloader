@@ -160,14 +160,17 @@ jobs:
         id: commit
         run: echo "commit_hash=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      - name: Create GitHub Release
+      - name: Ensure GitHub Release exists
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ env.commit_hash }} \
-            --title "Release ${{ env.commit_hash }}" \
-            --notes "Automated release for commit ${{ env.commit_hash }}" \
-            || echo "Release already exists"
+          if ! gh release view "${{ env.commit_hash }}"; then
+            gh release create "${{ env.commit_hash }}" \
+              --title "Release ${{ env.commit_hash }}" \
+              --notes "Automated release for commit ${{ env.commit_hash }}"
+          else
+            echo "Release already exists"
+          fi
 
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
@@ -178,4 +181,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ env.commit_hash }} artifacts/**/* --clobber
+          gh release upload "${{ env.commit_hash }}" artifacts/**/* --clobber
