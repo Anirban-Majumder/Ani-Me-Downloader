@@ -147,7 +147,7 @@ jobs:
           name: Log-Failure-${{ matrix.target }}
           path: logs/*
 
-release:
+  release:
     name: Create GitHub Release and Upload Artifacts
     needs: ci
     runs-on: ubuntu-latest
