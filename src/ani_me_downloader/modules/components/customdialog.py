@@ -50,6 +50,79 @@ class ListDialog(MaskDialogBase, Ui_MessageBox):
             self._adjustText()
         return super().eventFilter(obj, e)
 
+class SyncDialog(MaskDialogBase, Ui_MessageBox):
+    def __init__(self, anime, parent=None):
+        super().__init__(parent)
+        title = "Update MyAnimeList"
+        content = "Update your MyAnimeList entry for this anime"
+        self._setUpUi(title, content, self.widget)
+        self.yesButton.setText("Update")
+
+        # Create a layout for the message box
+        self.setShadowEffect(60, (0, 10), QColor(0, 0, 0, 50))
+        self.setMaskColor(QColor(0, 0, 0, 76))
+        self._hBoxLayout.removeWidget(self.widget)
+        self._hBoxLayout.addWidget(self.widget, 1, Qt.AlignCenter)
+        self.message_box_layout = QHBoxLayout()
+        self.message_box_layout.setContentsMargins(24, 0, 24, 0)
+        self.textLayout.setContentsMargins(24, 24, 24, 0)
+        self.vBoxLayout.insertLayout(1, self.message_box_layout)
+
+        # Show the anime cover image on the left side
+        cover_image_label = QLabel()
+        self.message_box_layout.addWidget(cover_image_label, Qt.AlignLeft)
+        self.img_size = (164, 240)
+        self.load_img(anime.img, cover_image_label)
+
+        # Create a form layout for the anime info on the right side
+        form_layout = QFormLayout()
+        self.message_box_layout.addLayout(form_layout, Qt.AlignRight)
+
+        # Add the anime title (non-editable)
+        title_label = QLabel(anime.name)
+        title_label.setMinimumWidth(300)
+        form_layout.addRow('Anime:', title_label)
+        form_layout.setContentsMargins(24, 24, 24, 24)
+        form_layout.setSpacing(12)
+
+        # Status dropdown
+        self.status_combobox = ComboBox(self)
+        self.status_combobox.addItems(['watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch'])
+        self.status_combobox.setCurrentText('watching')
+        form_layout.addRow('Status:', self.status_combobox)
+
+        # Score spinbox (1-10)
+        self.score_spinbox = SpinBox(self)
+        self.score_spinbox.setRange(0, 10)
+        self.score_spinbox.setValue(5)
+        form_layout.addRow('Score:', self.score_spinbox)
+
+        # Watched episodes spinbox
+        self.watched_episodes = SpinBox(self)
+        self.watched_episodes.setRange(0, anime.total_episodes)
+        self.watched_episodes.setValue(len(anime.episodes_downloaded) if anime.episodes_downloaded and anime.episodes_downloaded[0] != "full" else 0)
+        form_layout.addRow('Watched Episodes:', self.watched_episodes)
+
+        # Store anime ID for later use
+        self.anime_id = anime.idMal
+
+    def load_img(self, url, label):
+        pixmap = get_img(url)
+        scaled_pixmap = pixmap.scaled(self.img_size[0], self.img_size[1])
+        label.setPixmap(scaled_pixmap)
+
+    def eventFilter(self, obj, e: QEvent):
+        if obj is self.window() and e.type() == QEvent.Resize:
+            self._adjustText()
+        return super().eventFilter(obj, e)
+
+    def get_form_data(self):
+        return {
+            'anime_id': self.anime_id,
+            'status': self.status_combobox.currentText(),
+            'score': self.score_spinbox.value(),
+            'num_watched_episodes': self.watched_episodes.value()
+        }
 
 class AnimeDialog(MaskDialogBase, Ui_MessageBox):
     def __init__(self, anime, parent=None):

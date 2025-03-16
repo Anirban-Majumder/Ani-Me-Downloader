@@ -29,6 +29,7 @@ class Anime(QObject):
         super().__init__()
 
         self.id = kwargs.get('id', 0)
+        self.idMal = kwargs.get('idMal', 0)
         self.name = kwargs.get('name', '')
         self.search_name = kwargs.get('search_name', '')
         self.airing = kwargs.get('airing', False)
@@ -293,6 +294,7 @@ class Anime(QObject):
         """
         return {
             'id': self.id,
+            'idMal': self.idMal,
             'name': self.name,
             'search_name': self.search_name,
             'season': self.season,

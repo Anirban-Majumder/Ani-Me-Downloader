@@ -147,7 +147,7 @@ jobs:
           name: Log-Failure-${{ matrix.target }}
           path: logs/*
 
-  release:
+release:
     name: Create GitHub Release and Upload Artifacts
     needs: ci
     runs-on: ubuntu-latest
@@ -155,10 +155,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper commit messages
 
-      - name: Get Commit Hash
+      - name: Get Commit Hash and Message
         id: commit
-        run: echo "commit_hash=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: |
+          echo "commit_hash=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "commit_message=$(git log -1 --pretty=%B)" >> $GITHUB_ENV
 
       - name: Ensure GitHub Release exists
         env:
@@ -167,7 +171,7 @@ jobs:
           if ! gh release view "${{ env.commit_hash }}"; then
             gh release create "${{ env.commit_hash }}" \
               --title "Release ${{ env.commit_hash }}" \
-              --notes "Automated release for commit ${{ env.commit_hash }}"
+              --notes "$(echo -e "Automated release for commit ${{ env.commit_hash }}\n\nChanges:\n${{ env.commit_message }}")"
           else
             echo "Release already exists"
           fi
