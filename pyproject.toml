@@ -27,9 +27,9 @@ requires = [
     "PyQt5==5.15.9",
     "PyQt-Fluent-Widgets==1.0.0",
     # Web requests
-    "libtorrent",
-    "requests",
-    "bs4"
+    "libtorrent==2.0.11",
+    "requests==2.32.3",
+    "bs4==0.0.2"
 ]
 test_requires = [
     # Add your cross-platform test requirements here
@@ -89,7 +89,7 @@ flatpak_sdk = "org.freedesktop.Sdk"
 
 [tool.briefcase.app.ani-me-downloader.windows]
 requires = [
-    # Add your Windows-specific app requirements here
+    "pywin32==306",
 ]
 
 # Mobile deployments

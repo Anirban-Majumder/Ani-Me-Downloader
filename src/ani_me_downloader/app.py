@@ -22,7 +22,7 @@ def main():
         from ctypes import windll
         myappid = 'anirban.majumder.animedownloader'
         windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-    except ImportError:
+    except (ImportError, AttributeError):
         pass
 
 
@@ -43,7 +43,6 @@ def main():
     QFontDatabase.addApplicationFont(get_r_path('Yellowtail.ttf'))
 
     #show splash screen
-    print(get_r_path('logo.png'))
     pixmap = QPixmap(get_r_path('logo.png'))
     splash = QSplashScreen(pixmap)
     splash.show()
