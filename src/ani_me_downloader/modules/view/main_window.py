@@ -420,7 +420,10 @@ class MainWindow(FluentWindow):
 
         if self.anime_to_remove:
             for anime in self.anime_to_remove:
-                self.animes.remove(anime)
+                try:
+                    self.animes.remove(anime)
+                except ValueError:
+                    pass
             self.anime_to_remove = []
 
         if self.anime_to_add:
