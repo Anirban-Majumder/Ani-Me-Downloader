@@ -22,6 +22,7 @@ class Constants:
       Page {
         media(search: $search, type: ANIME) {
           id
+          idMal
           title {
             romaji
             english

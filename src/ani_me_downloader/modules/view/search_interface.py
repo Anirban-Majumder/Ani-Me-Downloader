@@ -129,7 +129,7 @@ class SearchInterface(BaseInterface):
                     result = {"name": name, "search_name": search_name, "format": selected_anime["format"], "airing": airing, "next_eta": next_eta,
                     "total_episodes": total_episodes, "img": selected_anime["coverImage"]["extraLarge"], "last_aired_episode": last_aired_episode,
                     "output_dir": output_dir, "episodes_to_download": episodes_to_download, "season": season,
-                    "watch_url": watch_url, "id": selected_anime["id"], "batch_download": batch_download}
+                    "watch_url": watch_url, "id": selected_anime["id"], "idMal":selected_anime["idMal"], "batch_download": batch_download}
                     #print(result)
                     self.addSignal.emit(result)
 
