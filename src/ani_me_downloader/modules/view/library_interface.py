@@ -30,10 +30,14 @@ class ImageLabel(QLabel):
         # Draw the image with rounded corners
         rect = QRect(0, 0, self.width(), self.height())
         path = QPainterPath()
-        path.addRect(0, 0, self.width(), self.height())
+        corner_radius = 20
+        rectF = QRectF(rect)
+        path.addRoundedRect(rectF, corner_radius, corner_radius)
         painter.setClipPath(path)
         if self.pixmap():
             painter.drawPixmap(rect, self.pixmap())
+
+
 
         # Draw a black rectangle at the bottom of the image
         bottom_rect_height = int(self.height() * 0.07)
@@ -49,8 +53,9 @@ class ImageLabel(QLabel):
         # Draw the current airing episode (if anime is airing)
         if self.anime.airing:
             current_episode_text = f"A{self.anime.last_aired_episode}"
-            current_episode_rect = QRect(0, self.height() - bottom_rect_height, 25, bottom_rect_height)
-            painter.fillRect(current_episode_rect, QColor('green'))
+            current_episode_rect = QRect(10, self.height() - bottom_rect_height, 25, bottom_rect_height)
+            fill_rect=QRect(0, self.height() - bottom_rect_height, 35, bottom_rect_height)
+            painter.fillRect(fill_rect, QColor('green'))
             painter.drawText(current_episode_rect, Qt.AlignCenter, current_episode_text)
 
         # Draw the number of downloaded episodes
@@ -59,14 +64,15 @@ class ImageLabel(QLabel):
         else:
             ep_dn = len(self.anime.episodes_downloaded)
         downloaded_episodes_text = f"D{ep_dn}"
-        downloaded_episodes_rect = QRect(self.width()-50, self.height() - bottom_rect_height , 25, bottom_rect_height)
+        downloaded_episodes_rect = QRect(self.width()-58, self.height() - bottom_rect_height , 25, bottom_rect_height)
         painter.fillRect(downloaded_episodes_rect, QColor('blue'))
         painter.drawText(downloaded_episodes_rect, Qt.AlignCenter, downloaded_episodes_text)
 
         # Draw the total number of episodes
         total_episodes_text = f"T{self.anime.total_episodes}"
-        total_episodes_rect = QRect(self.width()-25, self.height() - bottom_rect_height , 25, bottom_rect_height)
-        painter.fillRect(total_episodes_rect, QColor('grey'))
+        total_episodes_rect = QRect(self.width()-33, self.height() - bottom_rect_height , 25, bottom_rect_height)
+        total_fill = QRect(self.width()-33, self.height() - bottom_rect_height , 33, bottom_rect_height)
+        painter.fillRect(total_fill, QColor('grey'))
         painter.drawText(total_episodes_rect, Qt.AlignCenter, total_episodes_text)
 
     def enterEvent(self, event):
