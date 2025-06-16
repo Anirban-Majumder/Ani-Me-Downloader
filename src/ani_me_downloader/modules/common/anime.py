@@ -135,7 +135,7 @@ class Anime(QObject):
 
         self.download_from_magnet(magnet, name)
         self.episodes_downloading.append((episode_number, magnet))
-        print(episode_number, 'added to episodes_downloading', self.episodes_to_download)
+        print(episode_number, 'added to episodes_downloading')#, self.episodes_to_download)
         self.episodes_to_download.remove(episode_number)
 
         if episode_number == self.total_episodes:
