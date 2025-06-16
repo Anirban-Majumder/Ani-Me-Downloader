@@ -3,6 +3,10 @@ A simple and beautiful anime downloader and streamer.
 """
 import os
 import sys
+import warnings
+
+# Suppress SIP deprecation warnings
+warnings.filterwarnings("ignore", message=".*sipPyTypeDict.*", category=DeprecationWarning)
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFontDatabase
@@ -16,6 +20,10 @@ def get_r_path(path):
     return str(Path(__file__).joinpath("../resources").resolve().joinpath(path))
 
 def main():
+    # Suppress various SIP and PyQt related warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning, module="sip")
+    warnings.filterwarnings("ignore", message=".*sipPyTypeDict.*")
+    warnings.filterwarnings("ignore", message=".*sipPyTypeDictRef.*")
 
     try:
         # get custom app id for windows
