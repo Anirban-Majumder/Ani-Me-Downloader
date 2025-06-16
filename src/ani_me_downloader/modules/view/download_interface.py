@@ -361,3 +361,27 @@ class DownloadInterface(BaseInterface):
             self.panel_stack.setCurrentWidget(self.content_page)
             self.content_button.setStyleSheet("background-color: #29f1ff;")
             self.detail_button.setStyleSheet("")
+
+    def remove_torrent_from_ui(self, torrent_name):
+        """Remove a torrent from the UI display"""
+        # Find and remove the torrent item from the list
+        for i in range(self.torrent_list.topLevelItemCount()):
+            item = self.torrent_list.topLevelItem(i)
+            if item.text(0) == torrent_name:
+                # Remove from the tree widget
+                self.torrent_list.takeTopLevelItem(i)
+                
+                # Remove from tracking dictionaries
+                if torrent_name in self.torrent_items:
+                    del self.torrent_items[torrent_name]
+                if torrent_name in self.torrent_data:
+                    del self.torrent_data[torrent_name]
+                
+                # Clear detail panel if this was the selected torrent
+                if self.current_torrent == torrent_name:
+                    self.current_torrent = None
+                    self.detail_label.setText("Select a torrent to see details.")
+                    self.content_tree.clear()
+                
+                print(f"Removed torrent '{torrent_name}' from UI")
+                break

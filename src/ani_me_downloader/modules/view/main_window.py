@@ -108,7 +108,11 @@ class MainWindow(FluentWindow):
                 if delete_files:
                     message += " with files"
                 self.showSuccess(message)
-                # Remove from UI
+                
+                # Remove from UI immediately
+                self.downloadInterface.remove_torrent_from_ui(torrent_name)
+                
+                # Remove from main torrent list
                 for i, torrent in enumerate(self.torrents):
                     if torrent.name == torrent_name:
                         self.torrents.pop(i)
@@ -145,7 +149,15 @@ class MainWindow(FluentWindow):
         if not self.torrents:
             return
         
+        # Ensure all torrents are loaded into the UI
         self.downloadInterface.set_torrent_data(self.torrents)
+        
+        # Stop existing torrent thread if running
+        if hasattr(self, 'TorrentThread') and self.TorrentThread.isRunning():
+            self.TorrentThread.stop()
+            # Give it time to stop
+            import time
+            time.sleep(0.2)
         
         self.TorrentThread = TorrentThread(self.torrents)
         self.TorrentThread.torrentComplete.connect(self.onTorrentComplete)
@@ -197,16 +209,22 @@ class MainWindow(FluentWindow):
             import time
             time.sleep(0.5)  # Short delay to allow cleanup to start
 
-        # Save torrent state
+        # Save torrent state - make sure we save all torrents including queued ones
+        if hasattr(self, 'torrent_to_add') and self.torrent_to_add:
+            # Add pending torrents to the main list before saving
+            self.torrents.extend(self.torrent_to_add)
+            self.torrent_to_add = []
+        
         self.saveTorrent()
 
         # Disconnect all signals to prevent callbacks after deletion
         if hasattr(self, 'TorrentThread'):
             try:
                 self.TorrentThread.progressSignal.disconnect()
-                self.TorrentThread.completedSignal.disconnect()
+                self.TorrentThread.torrentComplete.disconnect()
                 self.TorrentThread.errorSignal.disconnect()
-                self.TorrentThread.filesUpdatedSignal.disconnect()
+                # Comment out filesUpdatedSignal as it's not currently connected
+                # self.TorrentThread.filesUpdatedSignal.disconnect()
             except:
                 pass
     
@@ -295,8 +313,8 @@ class MainWindow(FluentWindow):
                             self.saveAnime()
                             break
                         
-                # Remove the torrent regardless of whether AnimeThread is running
-                self.delete_torrent(torrent.name, False)
+                # Remove the torrent from main list and UI
+                self.remove_completed_torrent(torrent.name)
     
     def onFilesUpdated(self, torrent_name):
         """Called when a torrent's file list has been updated"""
@@ -372,14 +390,23 @@ class MainWindow(FluentWindow):
                 print(f"Torrent already exists: {new_torrent.name}")
                 return
 
+        # Also check pending torrents
+        for pending_torrent in self.torrent_to_add:
+            if compare_magnet_links(pending_torrent.magnet, new_torrent.magnet):
+                print(f"Torrent already in queue: {new_torrent.name}")
+                return
+
         if hasattr(self, 'TorrentThread') and self.TorrentThread.isRunning():
             print(f"Adding new torrent to queue: {new_torrent.name}")
             # Add to the pending list for the torrent thread
             self.torrent_to_add.append(new_torrent)
 
-            # Also add to UI immediately
+            # Also add to main list and UI immediately
             self.torrents.append(new_torrent)
             self.downloadInterface.set_torrent_data([new_torrent])
+            
+            # Save the updated list to ensure persistence
+            self.saveTorrent()
         else:
             print(f"Torrent thread not running, adding torrent directly: {new_torrent.name}")
             self.torrents.insert(0, new_torrent)
@@ -414,6 +441,10 @@ class MainWindow(FluentWindow):
                                 anime.episodes_downloading.pop(i)
                                 self.showSuccess(f"Episode {episode} of {anime.name} completed downloading (from queue)")
                                 break
+                        break
+                
+                # Remove the completed torrent from all lists and UI
+                self.remove_completed_torrent(torrent.name)
                             
             # Clear the queue after processing
             self.completed_torrents = []
@@ -434,13 +465,20 @@ class MainWindow(FluentWindow):
         self.libraryInterface.update_grid(self.animes)
 
     def onTorrentThreadExit(self, torrents):
+        # Update main torrent list with the ones from the thread
         self.torrents = torrents
 
+        # Add any pending torrents that were queued while thread was running
         if self.torrent_to_add:
-            self.torrents = self.torrent_to_add + self.torrents
+            print(f"Adding {len(self.torrent_to_add)} pending torrents to main list")
+            self.torrents.extend(self.torrent_to_add)
             self.torrent_to_add = []
 
+        # Save all torrents to ensure they persist
         self.saveTorrent()
+        
+        # Update the UI to reflect current torrent state
+        self.downloadInterface.set_torrent_data(self.torrents)
 
     def load(self):
         try:
@@ -491,3 +529,25 @@ class MainWindow(FluentWindow):
                 json.dump(data, f, indent=4)
         except Exception as e:
             print(f"Error in saveTorrent: {e}")
+
+    def remove_completed_torrent(self, torrent_name):
+        """Helper method to remove a completed torrent from lists and UI"""
+        # Remove from main torrent list
+        for i, torrent in enumerate(self.torrents):
+            if torrent.name == torrent_name:
+                self.torrents.pop(i)
+                break
+        
+        # Remove from pending list if it exists there
+        for i, torrent in enumerate(self.torrent_to_add):
+            if torrent.name == torrent_name:
+                self.torrent_to_add.pop(i)
+                break
+        
+        # Remove from UI
+        self.downloadInterface.remove_torrent_from_ui(torrent_name)
+        
+        # Save updated torrent list
+        self.saveTorrent()
+        
+        print(f"Removed completed torrent: {torrent_name}")

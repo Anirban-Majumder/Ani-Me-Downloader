@@ -15,6 +15,7 @@ class Torrent:
         self.progress = 0
         self.recheck_performed = False
         self.handle = None  # To store libtorrent handle
+        self.is_queued = False  # Track if torrent is in queue but not yet added to session
 
     def to_dict(self):
         return {
@@ -27,7 +28,8 @@ class Torrent:
             'size': self.size,
             'progress': self.progress,
             'eta': self.eta,
-            'recheck_performed': self.recheck_performed
+            'recheck_performed': self.recheck_performed,
+            'is_queued': getattr(self, 'is_queued', False)
         }
 
     @classmethod
@@ -47,4 +49,5 @@ class Torrent:
         torrent.eta = data.get('eta', 0)
         torrent.progress = data.get('progress', 0)
         torrent.recheck_performed = data.get('recheck_performed', False)
+        torrent.is_queued = data.get('is_queued', False)
         return torrent
