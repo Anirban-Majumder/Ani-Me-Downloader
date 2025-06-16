@@ -99,7 +99,7 @@ class ImageLabel(QLabel):
     
             if self.anime.airing:
                 days, hours, minutes = get_time_diffrence(self.anime.next_eta)
-                next_air= QLabel(f"Next Airing episode: {self.anime.last_aired_episode+1}")
+                next_air= QLabel(f"Next Airing: {self.anime.last_aired_episode+1}")
                 time_left = QLabel(f"Time Left: {days} days {hours} hrs" if days else f"Time Left: {hours} hrs {minutes} mins")
             else:
                 if len(self.anime.episodes_downloaded) == self.anime.total_episodes or (self.anime.episodes_downloaded and self.anime.episodes_downloaded[0] == "full"):
@@ -111,8 +111,8 @@ class ImageLabel(QLabel):
                 ep_dn = self.anime.total_episodes
             else:
                 ep_dn = len(self.anime.episodes_downloaded)
-            ep_downloaded = QLabel(f"Episodes Downloaded: {ep_dn}")
-            total_ep = QLabel(f"Total Episodes: {self.anime.total_episodes}")
+            ep_downloaded = QLabel(f"Downloaded: {ep_dn}")
+            total_ep = QLabel(f"Episodes: {self.anime.total_episodes}")
     
             labels=[next_air,time_left,ep_downloaded,total_ep] if self.anime.airing else [ep_downloaded,total_ep, status]
             for label in labels:
