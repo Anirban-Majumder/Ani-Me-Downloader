@@ -165,26 +165,21 @@ class AnimeDialog(MaskDialogBase, Ui_MessageBox):
         self.title_label.setMinimumWidth(300)
         form_layout.addRow('Title:', self.title_label)
         form_layout.setContentsMargins(24, 24, 24, 24)
-        form_layout.setSpacing(8)
-
-        # Add a spin box for the season
+        form_layout.setSpacing(8)        # Add a spin box for the season
         self.season = SpinBox(self)
+        self.season.setRange(1, 9999)  # Allow seasons up to 9999
         self.season.setValue(season)
-        form_layout.addRow('Season:', self.season)
-
-        # Add a spin box for the next airing episode (only enabled if status is RELEASING)
+        form_layout.addRow('Season:', self.season)        # Add a spin box for the next airing episode (only enabled if status is RELEASING)
         if airing:
             self.next_airing_episode = SpinBox(self)
+            self.next_airing_episode.setRange(1, 9999)  # Allow episodes up to 9999
             self.next_airing_episode.setEnabled(airing)
             self.next_airing_episode.setValue(airing_ep)
-            form_layout.addRow('Next Airing Episode:', self.next_airing_episode)
-
-        # Add a spin box for the number of episodes
+            form_layout.addRow('Next Airing Episode:', self.next_airing_episode)        # Add a spin box for the number of episodes
         self.episodes = SpinBox(self)
+        self.episodes.setRange(1, 9999)  # Allow episodes up to 9999
         self.episodes.setValue(total_ep)
-        form_layout.addRow('Total Episodes:', self.episodes)
-
-        # Add a combo box for the status
+        form_layout.addRow('Total Episodes:', self.episodes)        # Add a combo box for the status
         self.status_combobox = ComboBox(self)
         self.status_combobox.addItems(['FINISHED', 'RELEASING', 'NOT_YET_RELEASED', 'CANCELLED', 'HIATUS'])
         self.status_combobox.setCurrentText(anime['status'])
@@ -197,9 +192,11 @@ class AnimeDialog(MaskDialogBase, Ui_MessageBox):
         form_layout.addRow('Download Type:', self.download_type)
 
         self.from_download = SpinBox(self)
+        self.from_download.setRange(1, 9999)  # Allow episodes up to 9999
         self.from_download.setValue(1)
 
         self.to_download = SpinBox(self)
+        self.to_download.setRange(1, 9999)  # Allow episodes up to 9999
         self.to_download.setValue(total_ep)
 
         self.from_download_label = QLabel('Download from episode:')
