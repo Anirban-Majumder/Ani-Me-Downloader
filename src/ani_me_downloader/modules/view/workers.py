@@ -50,6 +50,11 @@ def load_resume_from_file(torrent_obj):
             return f.read()
     return None
 
+def delete_resume_file(torrent_obj):
+    filename = os.path.join(torrent_obj.path, f".{torrent_obj.name}.fastresume")
+    if os.path.exists(filename):
+        os.remove(filename)
+
 class TorrentThread(QThread):
     progressSignal = pyqtSignal(str, float, str, float, float, int)
     exitSignal = pyqtSignal(list)
@@ -406,6 +411,8 @@ class TorrentThread(QThread):
                                     self._stalled_torrents.remove(t_name)
                                 except KeyError:
                                     pass
+                                #delete the fastresume file
+                                delete_resume_file([obj for obj in to_remove_obj if obj["name"] == t_name])
                                 # Emit signal to update UI/anime list if desired
                                 self.torrentComplete.emit(to_remove_obj)
                 # Check for new torrents (every 2 seconds)
