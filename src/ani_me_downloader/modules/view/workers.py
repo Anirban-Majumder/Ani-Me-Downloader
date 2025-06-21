@@ -424,7 +424,7 @@ class TorrentThread(QThread):
                                     s = h_obj.status()
                                     print(f"[DEBUG] Progress: {s.progress}, Seeding: {s.is_seeding}")
                                     
-                                    if s.progress >= 1.0 or s.is_seeding:
+                                    if s.progress >= 0.998 or s.is_seeding:
                                         print(f"Torrent '{t_name}' verified successfully, removing it.")
                                         # Mark as completed and remove
                                         t_obj.status = "completed"
