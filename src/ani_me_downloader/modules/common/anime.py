@@ -272,8 +272,9 @@ class Anime(QObject):
         url = Constants.api_url
         response = requests.post(url, json={'query': query, 'variables': variables})
         data = response.json()
+        print(data)
 
-        if data['data']['Media']['nextAiringEpisode'] is None:
+        if data['data']['Media']['status'] != 'RELEASING':
             print(f'{self.name} has finished airing!')
             self.infoSignal.emit(f'{self.name} has finished airing!')
             self.last_aired_episode = self.total_episodes
