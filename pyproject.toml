@@ -90,6 +90,7 @@ flatpak_runtime_version = "24.08"
 flatpak_sdk = "org.freedesktop.Sdk"
 
 [tool.briefcase.app.ani-me-downloader.windows]
+console_app = true  # Enable terminal window for debug logs (disable for release)
 requires = [
     "pywin32==306",
 ]
