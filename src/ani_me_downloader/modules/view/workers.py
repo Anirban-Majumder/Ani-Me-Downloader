@@ -1,7 +1,33 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 from ..common.utils import Constants, check_network
-import libtorrent as lt
-import time, os, math
+import sys
+import os
+
+# Debug: Print system info for troubleshooting native library issues
+print(f"Python version: {sys.version}")
+print(f"Platform: {sys.platform}")
+print(f"Executable: {sys.executable}")
+
+try:
+    import libtorrent as lt
+    print(f"libtorrent version: {lt.__version__}")
+except ImportError as e:
+    print(f"Failed to import libtorrent: {e}")
+    # On Windows, check for missing DLLs
+    if sys.platform == 'win32':
+        print("Checking for Visual C++ Runtime...")
+        import ctypes
+        try:
+            ctypes.CDLL("vcruntime140.dll")
+            print("vcruntime140.dll: Found")
+        except OSError:
+            print("vcruntime140.dll: MISSING - Install Visual C++ Redistributable")
+    lt = None
+except Exception as e:
+    print(f"Error loading libtorrent: {type(e).__name__}: {e}")
+    lt = None
+
+import time, math
 from ..common.config import cfg
 
 
@@ -334,6 +360,13 @@ class TorrentThread(QThread):
 
     def run(self):
         try:
+            # Check if libtorrent loaded successfully
+            if lt is None:
+                error_msg = "libtorrent failed to load. Please ensure Visual C++ Redistributable is installed on Windows."
+                print(error_msg)
+                self.errorSignal.emit(error_msg)
+                return
+            
             print("Initializing libtorrent session.")
             self._session = lt.session()
 
