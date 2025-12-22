@@ -26,6 +26,8 @@ requires = [
     # GUI components
     "PyQt5==5.15.9",
     "PyQt-Fluent-Widgets==1.0.0",
+    # Windows API support (required by PyQt-Fluent-Widgets on Windows)
+    "pywin32==306; sys_platform == 'win32'",
     # Web requests
     "libtorrent==2.0.11",
     "requests==2.32.3",
