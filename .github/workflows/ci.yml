@@ -100,6 +100,15 @@ jobs:
           echo JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME_17_arm64}" | tee -a ${GITHUB_ENV}
           ${{ matrix.pre-command }}
 
+      - name: Install Visual C++ Redistributable (Windows)
+        if: matrix.target == 'Windows'
+        run: |
+          # Download and install Visual C++ Redistributable
+          curl -L -o vc_redist.x64.exe https://aka.ms/vs/17/release/vc_redist.x64.exe
+          ./vc_redist.x64.exe /install /quiet /norestart
+          echo "Visual C++ Redistributable installed"
+        shell: pwsh
+
       - name: Build App
         run: |
           ${{ matrix.briefcase-build-prefix }} \
