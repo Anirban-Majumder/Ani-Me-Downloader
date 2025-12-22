@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [ "Windows", "Ubuntu-24.04","Ubuntu-22.04"] #"Fedora-40", "macOS", "iOS", "Android"]
+        target: [ "Windows", "Ubuntu-24.04", "Fedora-40"] #"Ubuntu-22.04", "macOS", "iOS", "Android"]
         include:
           - target: "Windows"
             output-format: "app"
