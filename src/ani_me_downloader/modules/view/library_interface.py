@@ -252,7 +252,7 @@ class LibraryInterface(BaseInterface):
 
     def load_img(self, url, label):
         pixmap = get_img(url)
-        scaled_pixmap = pixmap.scaled(self.img_size[0], self.img_size[1])
+        scaled_pixmap = pixmap.scaled(self.img_size[0], self.img_size[1], Qt.KeepAspectRatio, Qt.SmoothTransformation)
         label.setPixmap(scaled_pixmap)
 
     def on_watch_online_button_clicked(self, url):

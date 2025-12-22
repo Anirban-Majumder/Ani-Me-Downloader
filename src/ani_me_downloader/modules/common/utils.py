@@ -23,25 +23,28 @@ def compare_magnet_links(link1, link2):
 def get_nyaa_search_result(name):
     torrent = []
     parms = {'f' : '0', 'c' : '1_0', 'q': name, 's': 'seeders', 'o': 'desc'}
-    response = requests.get(Constants.proxy_url if useProxy else Constants.nyaa_url, parms)
-    print("Request URL:", response.url)
-    if not response:
-        return torrent
-    soup = BeautifulSoup(response.text, 'html.parser')
-    if "No results found" in soup.text:
-        return torrent
     try:
-        result = soup.find('table', {'class': 'torrent-list'}).find('tbody').find_all('tr')
-        for r in result:
-            title = r.find('a', {'href': lambda x: x.startswith('/view') and not x.endswith('#comments')})['title']
-            magnet_link = r.find('a', {'href': lambda x: x.startswith('magnet')})['href']
-            size= r.find('td', {'class': 'text-center'}).find_next_sibling('td').text
-            seed= r.find('td', {'class': 'text-center'}).find_next_sibling('td').find_next_sibling('td').find_next_sibling('td').text
-            #print(seed, size, title)
-            torrent.append([title, magnet_link, size])
-    except Exception as e:
-        print(f"Error parsing nyaa.si: {e}")
-
+        response = requests.get(Constants.proxy_url if useProxy else Constants.nyaa_url, parms, timeout=10)
+        print("Request URL:", response.url)
+        if not response:
+            return torrent
+        soup = BeautifulSoup(response.text, 'html.parser')
+        if "No results found" in soup.text:
+            return torrent
+        try:
+            result = soup.find('table', {'class': 'torrent-list'}).find('tbody').find_all('tr')
+            for r in result:
+                title = r.find('a', {'href': lambda x: x.startswith('/view') and not x.endswith('#comments')})['title']
+                magnet_link = r.find('a', {'href': lambda x: x.startswith('magnet')})['href']
+                size= r.find('td', {'class': 'text-center'}).find_next_sibling('td').text
+                seed= r.find('td', {'class': 'text-center'}).find_next_sibling('td').find_next_sibling('td').find_next_sibling('td').text
+                #print(seed, size, title)
+                torrent.append([title, magnet_link, size])
+        except Exception as e:
+            print(f"Error parsing nyaa.si: {e}")
+    except requests.exceptions.RequestException as e:
+        print(f"Network error in get_nyaa_search_result: {e}")
+        return []
     return torrent
 
 
