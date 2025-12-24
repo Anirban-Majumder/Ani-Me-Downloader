@@ -280,12 +280,14 @@ class Anime(QObject):
             self.last_aired_episode = self.total_episodes
             self.airing = False
             self.next_eta = 0
-        else:
+        elif data['data']['Media']['nextAiringEpisode']:
             self.next_eta = data['data']['Media']['nextAiringEpisode']['airingAt']
             self.last_aired_episode = (
                 data['data']['Media']['nextAiringEpisode']['episode'] - 1
             )
             print(f'{self.name} episode {self.last_aired_episode} is airing')
+        else:
+            print(f'{self.name} is yet to air or no next airing episode info found.')
 
     def to_dict(self):
         """Convert the Anime instance to a dictionary.
