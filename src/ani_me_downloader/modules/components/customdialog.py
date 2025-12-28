@@ -88,19 +88,19 @@ class SyncDialog(MaskDialogBase, Ui_MessageBox):
         # Status dropdown
         self.status_combobox = ComboBox(self)
         self.status_combobox.addItems(['watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch'])
-        self.status_combobox.setCurrentText('watching')
+        self.status_combobox.setCurrentText('completed')
         form_layout.addRow('Status:', self.status_combobox)
 
         # Score spinbox (1-10)
         self.score_spinbox = SpinBox(self)
         self.score_spinbox.setRange(0, 10)
-        self.score_spinbox.setValue(5)
+        self.score_spinbox.setValue(0)
         form_layout.addRow('Score:', self.score_spinbox)
 
         # Watched episodes spinbox
         self.watched_episodes = SpinBox(self)
         self.watched_episodes.setRange(0, anime.total_episodes)
-        self.watched_episodes.setValue(len(anime.episodes_downloaded) if anime.episodes_downloaded and anime.episodes_downloaded[0] != "full" else 0)
+        self.watched_episodes.setValue(anime.total_episodes)
         form_layout.addRow('Watched Episodes:', self.watched_episodes)
 
         # Store anime ID for later use

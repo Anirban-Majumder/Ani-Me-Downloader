@@ -1,7 +1,6 @@
 # coding:utf-8
 from urllib.parse import parse_qs, urlparse
 import os, time, re, requests
-import requests
 from bs4 import BeautifulSoup
 from PyQt5.QtGui import QPixmap
 from .config import cfg, data_dir

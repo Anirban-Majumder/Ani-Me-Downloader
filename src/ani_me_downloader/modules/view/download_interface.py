@@ -141,22 +141,6 @@ class DownloadInterface(BaseInterface):
             self.toggle_panel_button.setText("Hide Details")
             self.panel_visible = True
 
-    def show_panel(self, panel_type):
-        """Show detail or content panel and make sure splitter shows it"""
-        # Make sure panel is visible
-        if not self.panel_visible:
-            self.toggle_panel()
-
-        # Set the currently visible panel
-        if panel_type == "detail":
-            self.panel_stack.setCurrentWidget(self.detail_page)
-            self.detail_button.setStyleSheet("background-color: #29f1ff;")
-            self.content_button.setStyleSheet("")
-        else:
-            self.panel_stack.setCurrentWidget(self.content_page)
-            self.content_button.setStyleSheet("background-color: #29f1ff;")
-            self.detail_button.setStyleSheet("")
-
     def set_torrent_data(self, torrents):
         """Register the list of torrent objects so that file info can be displayed dynamically."""
         print(f"DownloadInterface: set_torrent_data called with {len(torrents)} torrents")
@@ -350,7 +334,10 @@ class DownloadInterface(BaseInterface):
             self.content_tree.addTopLevelItem(no_files_item)
 
     def show_panel(self, panel_type):
-        # Expand the detail panel to one-third of the window height
+        """Show detail or content panel and make sure splitter shows it"""
+        # Make sure panel is visible
+        if not self.panel_visible:
+            self.toggle_panel()
         self.detail_panel.setMaximumHeight(int(2*self.height() / 3))
         
         if panel_type == "detail":
