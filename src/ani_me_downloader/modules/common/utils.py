@@ -103,9 +103,17 @@ def get_anime_list(name):
         'search': name
     }
     url = Constants.api_url
-    response = requests.post(url, json={'query': query, 'variables': variables})
-    data = response.json()
-    return data['data']['Page']['media']
+    try:
+        response = requests.post(url, json={'query': query, 'variables': variables})
+        response.raise_for_status()
+        data = response.json()
+        return data['data']['Page']['media']
+    except requests.exceptions.RequestException as e:
+        print(f"Network error in get_anime_list: {e}")
+        return []
+    except Exception as e:
+        print(f"Error in get_anime_list: {e}")
+        return []
 
 
 def get_img(url):
