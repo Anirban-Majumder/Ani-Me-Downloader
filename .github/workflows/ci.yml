@@ -109,6 +109,27 @@ jobs:
           echo "Visual C++ Redistributable installed"
         shell: pwsh
 
+      - name: Bundle OpenSSL DLLs for libtorrent (Windows)
+        if: matrix.target == 'Windows'
+        run: |
+          choco install openssl --no-progress -y
+          $resDir = "src\ani_me_downloader\resources\dll_win"
+          New-Item -ItemType Directory -Force -Path $resDir | Out-Null
+          $sslBin = "C:\Program Files\OpenSSL-Win64\bin"
+          if (-not (Test-Path $sslBin)) {
+            Write-Error "OpenSSL bin dir not found: $sslBin"
+            exit 1
+          }
+          Get-ChildItem -Path $sslBin -Filter "libcrypto-*.dll" | Copy-Item -Destination $resDir -Force
+          Get-ChildItem -Path $sslBin -Filter "libssl-*.dll"    | Copy-Item -Destination $resDir -Force
+          Write-Host "Bundled DLLs:"
+          Get-ChildItem $resDir
+          if (-not (Get-ChildItem $resDir -Filter "libcrypto-*.dll")) {
+            Write-Error "No libcrypto DLL bundled — libtorrent will crash at runtime"
+            exit 1
+          }
+        shell: pwsh
+
       - name: Build App
         run: |
           ${{ matrix.briefcase-build-prefix }} \

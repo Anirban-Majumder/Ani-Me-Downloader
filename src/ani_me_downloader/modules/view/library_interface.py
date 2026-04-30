@@ -1,5 +1,5 @@
 # coding:utf-8
-from PyQt5.QtCore import Qt, QRect, QRectF, QUrl, pyqtSignal
+from PyQt5.QtCore import Qt, QRect, QRectF, QUrl, QSize, pyqtSignal
 from PyQt5.QtGui import  QPainter, QColor, QPainterPath,  QDesktopServices
 from PyQt5.QtWidgets import (QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame,
                              QWidget, QVBoxLayout, QLabel, QWidget, QFrame)
@@ -82,15 +82,19 @@ class ImageLabel(QLabel):
             button_layout.setSpacing(5)
             
             # Add sync button to the left
-            sync_button = PrimaryToolButton(FluentIcon.SYNC)
+            sync_button = PrimaryToolButton(FluentIcon.INFO)
+            sync_button.setFixedSize(38, 38)
+            sync_button.setIconSize(QSize(20, 20))
             sync_button.clicked.connect(self.on_sync_button_clicked)
             button_layout.addWidget(sync_button)
-            
+
             # Add spacer to push delete button to the right
             button_layout.addStretch()
-            
+
             # Add delete button to the right
             delete_button = PrimaryToolButton(FluentIcon.DELETE)
+            delete_button.setFixedSize(38, 38)
+            delete_button.setIconSize(QSize(20, 20))
             delete_button.clicked.connect(self.on_delete_button_clicked)
             button_layout.addWidget(delete_button)
             
@@ -153,7 +157,7 @@ class ImageLabel(QLabel):
         self.delete_signal.emit(self.anime.id)
 
     def on_sync_button_clicked(self):
-        self.anime_sync_signal.emit(self.anime.idMal)
+        self.anime_sync_signal.emit(self.anime.id)
 
 
 class LibraryInterface(BaseInterface):
@@ -267,7 +271,7 @@ class LibraryInterface(BaseInterface):
         # Find the anime with the given MAL ID
         anime_data = None
         for anime in self.animes:
-            if anime.idMal == id:
+            if anime.id == id:
                 anime_data = anime
                 break
 

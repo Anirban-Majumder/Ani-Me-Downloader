@@ -1,10 +1,10 @@
 # coding:utf-8
-import requests
 import time
 import re
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from . import metadata
 from .utils import (
     Constants,
     remove_non_alphanum,
@@ -29,7 +29,6 @@ class Anime(QObject):
         super().__init__()
 
         self.id = kwargs.get('id', 0)
-        self.idMal = kwargs.get('idMal', 0)
         self.name = kwargs.get('name', '')
         self.search_name = kwargs.get('search_name', '')
         self.airing = kwargs.get('airing', False)
@@ -173,8 +172,17 @@ class Anime(QObject):
         """
         for _ in range(retry_count):
 
-            torrents = get_nyaa_search_result(self.search_name) if self.search_name==self.name else [list(item) for item in set(tuple(x) for x in (get_nyaa_search_result(self.search_name) + get_nyaa_search_result(self.name)))]
+            if self.search_name == self.name:
+                torrents = get_nyaa_search_result(self.search_name)
+            else:
+                merged = (
+                    get_nyaa_search_result(self.search_name)
+                    + get_nyaa_search_result(self.name)
+                )
+                torrents = [list(item) for item in {tuple(x) for x in merged}]
+
             if torrents:
+                torrents.sort(key=lambda t: t[3] if len(t) > 3 else 0, reverse=True)
                 return torrents
 
             self.infoSignal.emit('No result found... Trying Again...')
@@ -204,7 +212,7 @@ class Anime(QObject):
         regex = re.compile(pattern, re.IGNORECASE)
 
         if isinstance(episode_number, int):
-            for title, magnet_link, size in torrents:
+            for title, magnet_link, *_ in torrents:
                 if regex.search(title) and 'vostfr' not in title.lower():
                     title_lower = title.lower()
                     if '[ember]' in title_lower:
@@ -232,7 +240,7 @@ class Anime(QObject):
                             return magnet_link
 
         else:
-            for title, magnet_link, size in torrents:
+            for title, magnet_link, *_ in torrents:
                 if regex.search(title):
                     title_lower = title.lower()
                     if any(keyword in title_lower for keyword in ['[ember]', '[judas]', '[subsplease]']):
@@ -251,13 +259,13 @@ class Anime(QObject):
         """
         if not data:
             return
-        name, magnet, size = data
+        name, magnet = data[0], data[1]
         self.download_from_magnet(magnet, name)
         self.episodes_to_download = []
         self.episodes_downloading.append(('full', magnet))
 
     def check_currently_airing(self):
-        """Check if the anime is still airing and update the next_eta, last_aired_episode, and total_episodes attributes accordingly."""
+        """Refresh airing status via the metadata orchestrator (AniList → Jikan)."""
         current_time = int(time.time())
 
         if self.next_eta > current_time:
@@ -267,24 +275,25 @@ class Anime(QObject):
             )
             return
 
-        query = Constants.airing_query
-        variables = {'id': self.id}
-        url = Constants.api_url
-        response = requests.post(url, json={'query': query, 'variables': variables})
-        data = response.json()
-        print(data)
+        try:
+            info = metadata.get_airing(self.id)
+        except metadata.MetadataUnavailable as exc:
+            print(f"Could not check airing for {self.name}: {exc}")
+            self.errorSignal.emit(f"Could not check {self.name}: source unavailable")
+            return
 
-        if data['data']['Media']['status'] != 'RELEASING':
+        if info["status"] != "RELEASING":
             print(f'{self.name} has finished airing!')
             self.infoSignal.emit(f'{self.name} has finished airing!')
             self.last_aired_episode = self.total_episodes
             self.airing = False
             self.next_eta = 0
-        elif data['data']['Media']['nextAiringEpisode']:
-            self.next_eta = data['data']['Media']['nextAiringEpisode']['airingAt']
-            self.last_aired_episode = (
-                data['data']['Media']['nextAiringEpisode']['episode'] - 1
-            )
+            return
+
+        if info["next_eta"]:
+            self.next_eta = info["next_eta"]
+            if info["last_aired_episode"] is not None:
+                self.last_aired_episode = info["last_aired_episode"]
             print(f'{self.name} episode {self.last_aired_episode} is airing')
         else:
             print(f'{self.name} is yet to air or no next airing episode info found.')
@@ -297,7 +306,6 @@ class Anime(QObject):
         """
         return {
             'id': self.id,
-            'idMal': self.idMal,
             'name': self.name,
             'search_name': self.search_name,
             'season': self.season,
@@ -317,12 +325,5 @@ class Anime(QObject):
 
     @classmethod
     def from_dict(cls, data):
-        """Create an Anime instance from a dictionary.
-
-        Args:
-            data (dict): A dictionary containing the data for the Anime instance.
-
-        Returns:
-            Anime: An Anime instance initialized with the given data.
-        """
+        """Build an Anime from a persisted dict."""
         return cls(**data)

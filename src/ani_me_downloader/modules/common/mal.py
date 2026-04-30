@@ -166,6 +166,32 @@ def make_authenticated_request(url, method='GET', params=None, data=None):
     response.raise_for_status()
     return response
 
+def get_anime_details(anime_id, fields=None):
+    """Fetch anime metadata from MAL.
+
+    Uses OAuth token if present (returns my_list_status too); falls back to
+    X-MAL-CLIENT-ID header for public fields when not authenticated, so the
+    dialog never triggers a browser-based auth flow just to read a synopsis.
+    """
+    if fields is None:
+        fields = (
+            "synopsis,mean,rank,popularity,num_episodes,start_date,end_date,"
+            "genres,studios,main_picture,media_type,status,my_list_status"
+        )
+    url = f'https://api.myanimelist.net/v2/anime/{anime_id}'
+    params = {'fields': fields}
+
+    token_data = load_token()
+    if token_data and 'access_token' in token_data:
+        response = make_authenticated_request(url, method='GET', params=params)
+    else:
+        headers = {'X-MAL-CLIENT-ID': CLIENT_ID}
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        response.raise_for_status()
+
+    return response.json()
+
+
 def update_anime_status(anime_id, status=None, score=None, num_watched_episodes=None):
     """
     Update anime entry in MyAnimeList

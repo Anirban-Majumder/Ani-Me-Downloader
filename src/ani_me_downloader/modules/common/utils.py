@@ -20,31 +20,45 @@ def compare_magnet_links(link1, link2):
 
 
 def get_nyaa_search_result(name):
-    torrent = []
-    parms = {'f' : '0', 'c' : '1_0', 'q': name, 's': 'seeders', 'o': 'desc'}
+    """Scrape Nyaa torrent rows.
+
+    Returns a list of ``[title, magnet, size, seeds]`` where ``seeds`` is an
+    int. Rows whose seed cell is missing or non-numeric default to 0.
+    """
+    torrents = []
+    params = {'f': '0', 'c': '1_0', 'q': name, 's': 'seeders', 'o': 'desc'}
     try:
-        response = requests.get(Constants.proxy_url if useProxy else Constants.nyaa_url, parms, timeout=10)
+        response = requests.get(
+            Constants.proxy_url if useProxy else Constants.nyaa_url,
+            params,
+            timeout=10,
+        )
         print("Request URL:", response.url)
         if not response:
-            return torrent
+            return torrents
         soup = BeautifulSoup(response.text, 'html.parser')
         if "No results found" in soup.text:
-            return torrent
+            return torrents
         try:
-            result = soup.find('table', {'class': 'torrent-list'}).find('tbody').find_all('tr')
-            for r in result:
-                title = r.find('a', {'href': lambda x: x.startswith('/view') and not x.endswith('#comments')})['title']
-                magnet_link = r.find('a', {'href': lambda x: x.startswith('magnet')})['href']
-                size= r.find('td', {'class': 'text-center'}).find_next_sibling('td').text
-                seed= r.find('td', {'class': 'text-center'}).find_next_sibling('td').find_next_sibling('td').find_next_sibling('td').text
-                #print(seed, size, title)
-                torrent.append([title, magnet_link, size])
+            rows = soup.find('table', {'class': 'torrent-list'}).find('tbody').find_all('tr')
+            for row in rows:
+                title = row.find('a', {'href': lambda x: x.startswith('/view') and not x.endswith('#comments')})['title']
+                magnet_link = row.find('a', {'href': lambda x: x.startswith('magnet')})['href']
+                # td layout: [category, name, links*, size*, date*, seeds*, leechers*, downloads*]
+                # `find('td', .text-center)` lands on the links cell (first centered).
+                links_cell = row.find('td', {'class': 'text-center'})
+                size_cell = links_cell.find_next_sibling('td')
+                seed_cell = size_cell.find_next_sibling('td').find_next_sibling('td')
+                size = size_cell.get_text(strip=True)
+                seed_text = seed_cell.get_text(strip=True)
+                seeds = int(seed_text) if seed_text.isdigit() else 0
+                torrents.append([title, magnet_link, size, seeds])
         except Exception as e:
             print(f"Error parsing nyaa.si: {e}")
     except requests.exceptions.RequestException as e:
         print(f"Network error in get_nyaa_search_result: {e}")
         return []
-    return torrent
+    return torrents
 
 
 def remove_non_alphanum(string):
@@ -80,13 +94,13 @@ def get_season(url):
     return season
 
 def get_watch_url(title):
-    watch_url = Constants.nineanime_url
+    watch_url = 'https://animekai.to'
     try:
-        url = f'https://animekai.to/ajax/anime/search'
+        url = 'https://animekai.to/ajax/anime/search'
         params = {'keyword': title}
         response = requests.get(url, params=params, timeout=5)
         data = response.json()
-        if data.get('status') == 200 and data.get('result', {}).get('html'):
+        if data.get('status') in ('ok', 200) and data.get('result', {}).get('html'):
             soup = BeautifulSoup(data['result']['html'], 'html.parser')
             first_item = soup.find('a', {'class': 'aitem'})
             if first_item and 'href' in first_item.attrs:
@@ -95,25 +109,6 @@ def get_watch_url(title):
     except Exception as e:
         print(f"Error getting watch url: {e}")
     return watch_url
-
-
-def get_anime_list(name):
-    query = Constants.list_query
-    variables = {
-        'search': name
-    }
-    url = Constants.api_url
-    try:
-        response = requests.post(url, json={'query': query, 'variables': variables})
-        response.raise_for_status()
-        data = response.json()
-        return data['data']['Page']['media']
-    except requests.exceptions.RequestException as e:
-        print(f"Network error in get_anime_list: {e}")
-        return []
-    except Exception as e:
-        print(f"Error in get_anime_list: {e}")
-        return []
 
 
 def get_img(url):

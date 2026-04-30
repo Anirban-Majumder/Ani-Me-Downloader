@@ -28,6 +28,7 @@ class MainWindow(FluentWindow):
         self.initLayout()
 
         self.animes, self.torrents = self.load()
+        self.reconcile_torrents()
         self.torrent_command_queue = queue.Queue()
         self.anime_to_add = []
         self.anime_to_remove = []
@@ -343,8 +344,11 @@ class MainWindow(FluentWindow):
         content = 'Sorry, we couldnt figure out which torrent to download. Please choose one from the list below:'
         self.torrent_box = ListDialog(title, content, self)
         id, torrent_list = list[0], list[1]
+        max_seeds = max((t[3] if len(t) > 3 else 0 for t in torrent_list), default=0)
+        width = max(1, len(str(max_seeds)))
         for torrent in torrent_list:
-            text = f"{torrent[2]} || {torrent[0]}"
+            seeds = torrent[3] if len(torrent) > 3 else 0
+            text = f"{seeds:0{width}d} | {torrent[2]} || {torrent[0]}"
             item = QListWidgetItem(text)
             item.setData(Qt.UserRole, torrent)
             self.torrent_box.list_view.addItem(item)
@@ -462,22 +466,49 @@ class MainWindow(FluentWindow):
         # Update the UI to reflect current torrent state
         self.downloadInterface.set_torrent_data(self.torrents)
 
+    def reconcile_torrents(self):
+        """Re-add any torrent that is listed in anime.episodes_downloading but missing from self.torrents."""
+        added = 0
+        for anime in self.animes:
+            for episode, magnet in list(anime.episodes_downloading):
+                # Check whether a torrent with this magnet already exists
+                exists = any(compare_magnet_links(t.magnet, magnet) for t in self.torrents)
+                if not exists:
+                    if episode == 'full':
+                        name = anime.name
+                    else:
+                        name = f'{anime.name} S{anime.season:02d}E{episode:02d}'
+                    recovered = Torrent(
+                        name=name,
+                        magnet=magnet,
+                        path=anime.output_dir,
+                        anime_id=anime.id,
+                        status='downloading'
+                    )
+                    self.torrents.append(recovered)
+                    added += 1
+                    print(f"[reconcile] Re-added missing torrent: {name}")
+        if added:
+            print(f"[reconcile] Recovered {added} missing torrent(s).")
+            self.saveTorrent()
+
     def load(self):
+        """Read animes and torrents from disk."""
         try:
             with open(cfg.animeFile.value, 'r') as f:
-                data = json.load(f)
-                animes = [Anime.from_dict(data) for data in data]
-                print(f"Loaded {len(animes)} animes")
-        except:
+                animes = [Anime.from_dict(item) for item in json.load(f)]
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"Could not read anime file: {exc}")
             animes = []
+        print(f"Loaded {len(animes)} animes")
 
         try:
             with open(cfg.torrentFile.value, 'r') as f:
-                data = json.load(f)
-                torrents = [Torrent.from_dict(torrent_data) for torrent_data in data]
-                print(f"Loaded {len(torrents)} torrents")
-        except:
+                torrents = [Torrent.from_dict(item) for item in json.load(f)]
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"Could not read torrent file: {exc}")
             torrents = []
+        print(f"Loaded {len(torrents)} torrents")
         return animes, torrents
 
     def saveAnime(self):

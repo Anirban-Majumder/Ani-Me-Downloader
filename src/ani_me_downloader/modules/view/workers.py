@@ -2,26 +2,42 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from ..common.utils import Constants, check_network
 import sys
 import os
+import ctypes
 
-# Debug: Print system info for troubleshooting native library issues
 print(f"Python version: {sys.version}")
 print(f"Platform: {sys.platform}")
 print(f"Executable: {sys.executable}")
+
+# Windows: libtorrent wheel does not bundle OpenSSL. The .pyd imports fine but the
+# session/network init crashes the process when libssl/libcrypto are missing. Add the
+# bundled DLL dir (populated by CI) to the search path before importing libtorrent.
+if sys.platform == 'win32':
+    _here = os.path.dirname(os.path.abspath(__file__))
+    _dll_dir = os.path.normpath(os.path.join(_here, '..', '..', 'resources', 'dll_win'))
+    if os.path.isdir(_dll_dir):
+        try:
+            os.add_dll_directory(_dll_dir)
+            print(f"Added DLL search dir: {_dll_dir}")
+        except Exception as e:
+            print(f"add_dll_directory failed: {e}")
+    else:
+        print(f"DLL dir not found (dev run?): {_dll_dir}")
+
+    print("Probing Windows native deps:")
+    for _dll in ("vcruntime140.dll",
+                 "libcrypto-3-x64.dll", "libssl-3-x64.dll",
+                 "libcrypto-1_1-x64.dll", "libssl-1_1-x64.dll"):
+        try:
+            ctypes.CDLL(_dll)
+            print(f"  {_dll}: OK")
+        except OSError:
+            print(f"  {_dll}: MISSING")
 
 try:
     import libtorrent as lt
     print(f"libtorrent version: {lt.__version__}")
 except ImportError as e:
     print(f"Failed to import libtorrent: {e}")
-    # On Windows, check for missing DLLs
-    if sys.platform == 'win32':
-        print("Checking for Visual C++ Runtime...")
-        import ctypes
-        try:
-            ctypes.CDLL("vcruntime140.dll")
-            print("vcruntime140.dll: Found")
-        except OSError:
-            print("vcruntime140.dll: MISSING - Install Visual C++ Redistributable")
     lt = None
 except Exception as e:
     print(f"Error loading libtorrent: {type(e).__name__}: {e}")
@@ -54,6 +70,7 @@ class AnimeThread(QThread):
 
     def run(self):
         if not check_network():
+            print("Network check failed. Please check your Internet connection.")
             self.sendError.emit("There is something wrong with your Internet connection.")
             return
 
@@ -275,6 +292,10 @@ class TorrentThread(QThread):
                 'enable_incoming_utp': True,
                 'enable_outgoing_utp': True,
                 'strict_super_seeding': False,
+                'strict_super_seeding': False,
+                'dont_count_slow_torrents': False, # Strict queue: slow torrents MUST count towards the limit
+                'auto_manage_startup': 1, # Start auto-manager immediately
+                'auto_manage_interval': 5,
             }
             # For older libtorrent versions or if wrapper doesn't support dict apply
             # we use the pack_settings if available or manual apply.
@@ -282,6 +303,15 @@ class TorrentThread(QThread):
             self._session.apply_settings(settings)
 
             print("Session configured with optimal settings.")
+            # Enforce limit on initial load
+            active_count = 0
+            for t in self.torrents:
+                if t.status == "downloading" or t.status == "queued":
+                     if active_count < self.max_concurrent_downloads:
+                         t.status = "downloading"
+                         active_count += 1
+                     else:
+                         t.status = "queued"
 
             # Add each torrent with existing resume data
             self._add_torrents(self.torrents)
@@ -307,9 +337,12 @@ class TorrentThread(QThread):
                         print(f"Error processing command: {e}")
 
                 # Wait for alerts with timeout (efficient event loop)
-                self._session.wait_for_alert(100)
+                # self._session.wait_for_alert(100)
                 
                 alerts = self._session.pop_alerts()
+                if not alerts:
+                    time.sleep(0.05)
+                
                 for alert in alerts:
                     if isinstance(alert, lt.save_resume_data_alert):
                         tor_handle = alert.handle
@@ -338,16 +371,23 @@ class TorrentThread(QThread):
                                 # Only process if torrent was in verifying state
                                 if getattr(t_obj, "recheck_performed", False):
                                     s = h_obj.status()
-                                    if s.progress >= 0.998 or s.is_seeding:
+                                    # Strict 100% check or seeding
+                                    if s.is_seeding or s.progress >= 0.9999: # Effectively 100%
                                         t_obj.status = "completed"
                                         self._remove_torrent_internal(t_name, False)
                                         self.torrentComplete.emit([t_obj])
                                     else:
-                                        print(f"Torrent '{t_name}' verification failed, resuming download.")
+                                        print(f"Torrent '{t_name}' verification failed (progress: {s.progress:.4f}), resuming download.")
                                         t_obj.status = "downloading"
                                         h_obj.resume()
                                         t_obj.recheck_performed = False
                                 break
+                    elif isinstance(alert, lt.state_changed_alert):
+                         # Debug state changes for queue monitoring
+                         try:
+                             print(f"[DEBUG] State changed: {alert.message()} - {alert.handle.status().name if alert.handle.is_valid() else 'Invalid Handle'}")
+                         except:
+                             pass
 
                 current_time = time.time()
 
@@ -382,7 +422,9 @@ class TorrentThread(QThread):
                                 status = "paused" # Force paused if we manually paused it
                             elif s.is_seeding:
                                 status = "seeding"
-                            elif torrent_obj.progress >= 99.9:
+                            elif s.state == lt.torrent_status.finished: # Explicit finished state
+                                status = "finished" 
+                            elif torrent_obj.progress >= 99.999:
                                 status = "completed"
                             elif s.state == lt.torrent_status.checking_files:
                                 status = "verifying"
@@ -408,13 +450,21 @@ class TorrentThread(QThread):
                             torrent_obj.status = status
                             torrent_obj.size = self._format_size(s.total_wanted)
 
-                            # Trigger verification for completed torrents (only once)
-                            if (torrent_obj.progress >= 99.9 or s.is_seeding) and status not in ["verifying", "seeding"] and not getattr(torrent_obj, "recheck_performed", False):
+                            # Trigger verification OR completion
+                            # If it's seeding or finished, it's done. No need to recheck.
+                            if s.is_seeding or s.state == lt.torrent_status.finished or torrent_obj.progress >= 99.999:
+                                print(f"[DEBUG] Torrent {torrent_name} is done/seeding. Marking completed.")
+                                torrent_obj.status = "completed"
+                                self._remove_torrent_internal(torrent_name, False)
+                                self.torrentComplete.emit([torrent_obj])
+                                continue # Skip recheck logic
+                                
+                            # Only force recheck if it looks stuck at 100% but not seeding/finished
+                            if (s.progress >= 0.9999) and status not in ["verifying", "seeding", "finished", "completed"] and not getattr(torrent_obj, "recheck_performed", False):
                                 print(f"[DEBUG] Force Recheck for: {torrent_obj.name}")
                                 torrent_obj.status = "verifying"
                                 torrent_obj.recheck_performed = True
-                                handle.force_recheck()
-                                
+                                handle.force_recheck() 
                             # Update UI
                             self.progressSignal.emit(
                                 torrent_name, 

@@ -22,14 +22,20 @@ class SearchThread(QThread):
         self.anime_name = anime_name
 
     def run(self):
-        from ..common.utils import get_anime_list, check_network
+        from ..common.utils import check_network
+        from ..common.metadata import search, MetadataUnavailable
         if not check_network():
             print("No Internet")
             self.searchFinished.emit(["No Internet"])
-        else:
-            print("Searching")
-            anime_list = get_anime_list(self.anime_name)
-            self.searchFinished.emit(anime_list)
+            return
+        print("Searching")
+        try:
+            anime_list = search(self.anime_name)
+        except MetadataUnavailable as exc:
+            print(f"Search providers unavailable: {exc}")
+            self.searchFinished.emit(["Sources Unavailable"])
+            return
+        self.searchFinished.emit(anime_list)
 
 
 class SearchInterface(BaseInterface):
@@ -83,6 +89,11 @@ class SearchInterface(BaseInterface):
             content = 'Please check your internet connection and try again'
             error_box = MessageBox(title, content, self)
             error_box.exec_()
+        elif self.anime_list[0] == "Sources Unavailable":
+            title = 'Search providers unavailable'
+            content = 'Both AniList and Jikan are unreachable. Try again later.'
+            error_box = MessageBox(title, content, self)
+            error_box.exec_()
         else:
             self.message_box = ListDialog('Search Results',"Choose the anime form the list:", self)
             for anime in self.anime_list:
@@ -126,10 +137,19 @@ class SearchInterface(BaseInterface):
                     if not os.path.exists(output_dir):
                         os.makedirs(output_dir, exist_ok=True)
                     episodes_to_download = list(range(from_ep, to_ep+ 1))
+                    mal_id = selected_anime.get("idMal") or selected_anime.get("id") or 0
+                    if not mal_id:
+                        error_box = MessageBox(
+                            "Cannot add anime",
+                            "This entry has no MyAnimeList ID, which is required.",
+                            self,
+                        )
+                        error_box.exec_()
+                        return
                     result = {"name": name, "search_name": search_name, "format": selected_anime["format"], "airing": airing, "next_eta": next_eta,
                     "total_episodes": total_episodes, "img": selected_anime["coverImage"]["extraLarge"], "last_aired_episode": last_aired_episode,
                     "output_dir": output_dir, "episodes_to_download": episodes_to_download, "season": season,
-                    "watch_url": watch_url, "id": selected_anime["id"], "idMal":selected_anime["idMal"], "batch_download": batch_download}
+                    "watch_url": watch_url, "id": mal_id, "batch_download": batch_download}
                     #print(result)
                     self.addSignal.emit(result)
 
