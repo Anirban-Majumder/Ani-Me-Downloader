@@ -1,0 +1,65 @@
+QLabel#epHeader {
+    color: #1a1a1a;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+QLabel#epLegendText {
+    color: #3a3a3a;
+    font-size: 11px;
+}
+
+QLabel#epLegendSwatch {
+    border-radius: 3px;
+    min-width: 14px;
+    max-width: 14px;
+    min-height: 14px;
+    max-height: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+QLabel#epEmpty {
+    color: #5a5a5a;
+    font-size: 12px;
+}
+
+QFrame#epSeparator {
+    color: #d0d0d0;
+    background-color: #d0d0d0;
+    max-height: 1px;
+}
+
+QScrollArea#epScroll {
+    border: none;
+    background-color: transparent;
+}
+
+QWidget#epGridHost {
+    background-color: transparent;
+}
+
+QLabel#epCell {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 12px;
+    border-radius: 6px;
+    padding: 4px 6px;
+    background-color: #d8d8d8;
+    qproperty-alignment: AlignCenter;
+}
+
+QLabel#epCell[epStatus="track_only"] { background-color: #3D6FCC; color: #ffffff; }
+QLabel#epCell[epStatus="queued"]     { background-color: #E08A1A; color: #ffffff; }
+QLabel#epCell[epStatus="downloading"]{ background-color: #D4AE00; color: #1a1a1a; }
+QLabel#epCell[epStatus="done"]       { background-color: #2E8B40; color: #ffffff; }
+QLabel#epCell[epStatus="not_aired"]  { background-color: #c8ccd2; color: #555a62; }
+QLabel#epCell[epStatus="batch"]      { background-color: #5C49C2; color: #ffffff; }
+QLabel#epCell[epStatus="excluded"]   { background-color: #e2e4e8; color: #8a8e94; }
+
+QLabel#epLegendSwatch[epStatus="track_only"] { background-color: #3D6FCC; }
+QLabel#epLegendSwatch[epStatus="queued"]     { background-color: #E08A1A; }
+QLabel#epLegendSwatch[epStatus="downloading"]{ background-color: #D4AE00; }
+QLabel#epLegendSwatch[epStatus="done"]       { background-color: #2E8B40; }
+QLabel#epLegendSwatch[epStatus="not_aired"]  { background-color: #c8ccd2; }
+QLabel#epLegendSwatch[epStatus="batch"]      { background-color: #5C49C2; }
+QLabel#epLegendSwatch[epStatus="excluded"]   { background-color: #e2e4e8; }

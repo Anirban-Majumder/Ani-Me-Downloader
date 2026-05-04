@@ -74,4 +74,4 @@ local
 .venv
 logs
 src/ani_me_downloader/resources/icons/
-src/ani_me_downloader/resources/dll_win/
+.briefcase/
