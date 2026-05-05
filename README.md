@@ -83,7 +83,6 @@ Output lands in `dist/`.
 
 - **`libtorrent` install fails on Linux/macOS?** Use system package: `sudo pacman -S libtorrent-rasterbar` (Arch), `brew install libtorrent-rasterbar` (macOS), or `apt install python3-libtorrent` (Debian).
 - **PyQt errors on Wayland?** Run with `QT_QPA_PLATFORM=xcb briefcase dev`.
-- **App tested mainly on Windows** — Linux/macOS may have rough edges. PRs welcome!
 
 ---
 
