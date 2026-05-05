@@ -107,7 +107,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.
 
 <div align="center">
 
-Made with ❤️ by [Anirban Majumder](https://github.com/anirbanmajumder0) and contributors.
+Made with ❤️ by [Anirban Majumder](https://github.com/anirbanmajumder0).
 
 ⭐ **Star the repo if you find it useful!**
 
